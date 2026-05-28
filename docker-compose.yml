@@ -1,0 +1,45 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: http://localhost:8080
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      args:
+        # Puste = requesty przez nginx (/api, /socket.io)
+        VITE_API_URL: ""
+        VITE_SOCKET_URL: ""
+    ports:
+      - '8080:80'
+    depends_on:
+      - backend
+
+volumes:
+  redis_data:

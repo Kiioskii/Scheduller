@@ -1,0 +1,33 @@
+# Dev overlay: hot reload + porty jak lokalnie (pnpm dev)
+# Użycie: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  backend:
+    build:
+      target: dev
+    volumes:
+      - ./apps/backend/src:/app/apps/backend/src
+      - ./packages/shared/src:/app/packages/shared/src
+    environment:
+      NODE_ENV: development
+      CORS_ORIGIN: http://localhost:5173
+    ports:
+      - '3000:3000'
+    command: pnpm --filter @park/backend dev
+
+  frontend:
+    build:
+      target: dev
+    volumes:
+      - ./apps/frontend/src:/app/apps/frontend/src
+      - ./apps/frontend/index.html:/app/apps/frontend/index.html
+    environment:
+      VITE_API_URL: http://localhost:3000
+      VITE_SOCKET_URL: http://localhost:3000
+    ports:
+      - '5173:5173'
+    command: pnpm --filter @park/frontend dev
+
+  redis:
+    ports:
+      - '6379:6379'
