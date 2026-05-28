@@ -7,7 +7,7 @@ function App() {
     <div className="min-h-screen bg-background">
       <header className="border-b">
         <div className="mx-auto max-w-5xl px-6 py-4">
-          <h1 className="text-2xl font-semibold tracking-tight">PARK</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Scheduler</h1>
           <p className="text-sm text-muted-foreground">Aplikacja do tworzenia grafików</p>
         </div>
       </header>

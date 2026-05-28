@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { healthResponseSchema } from '@park/shared';
+import { healthResponseSchema } from '@scheduler/shared';
 import { RedisService } from './redis/redis.service';
 
 @Controller()

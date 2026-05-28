@@ -13,14 +13,14 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS builder
 COPY packages/shared ./packages/shared
 COPY apps/backend ./apps/backend
-RUN pnpm --filter @park/shared build
-RUN pnpm --filter @park/backend build
+RUN pnpm --filter @scheduler/shared build
+RUN pnpm --filter @scheduler/backend build
 
 FROM deps AS dev
 COPY packages/shared ./packages/shared
 COPY apps/backend ./apps/backend
 EXPOSE 3000
-CMD ["pnpm", "--filter", "@park/backend", "dev"]
+CMD ["pnpm", "--filter", "@scheduler/backend", "dev"]
 
 FROM builder AS runner
 WORKDIR /app

@@ -14,6 +14,6 @@ export function createSocket(): Socket {
   });
 }
 
-export function emitPing(socket: Socket, message = 'hello from PARK frontend') {
+export function emitPing(socket: Socket, message = 'hello from Scheduler frontend') {
   socket.emit('ping', { message });
 }

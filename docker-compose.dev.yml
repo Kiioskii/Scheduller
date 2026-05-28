@@ -13,7 +13,7 @@ services:
       CORS_ORIGIN: http://localhost:5173
     ports:
       - '3000:3000'
-    command: pnpm --filter @park/backend dev
+    command: pnpm --filter @scheduler/backend dev
 
   frontend:
     build:
@@ -26,7 +26,7 @@ services:
       VITE_SOCKET_URL: http://localhost:3000
     ports:
       - '5173:5173'
-    command: pnpm --filter @park/frontend dev
+    command: pnpm --filter @scheduler/frontend dev
 
   redis:
     ports:

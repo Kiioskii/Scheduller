@@ -56,7 +56,7 @@ importers:
       '@nestjs/websockets':
         specifier: ^11.1.2
         version: 11.1.24(@nestjs/common@11.1.24(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24)(@nestjs/platform-socket.io@11.1.24)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      '@park/shared':
+      '@scheduler/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       '@supabase/supabase-js':
@@ -120,12 +120,12 @@ importers:
 
   apps/frontend:
     dependencies:
-      '@park/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@radix-ui/react-slot':
         specifier: ^1.2.3
         version: 1.2.4(@types/react@19.2.15)(react@19.2.6)
+      '@scheduler/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@tanstack/react-query':
         specifier: ^5.80.6
         version: 5.100.14(react@19.2.6)

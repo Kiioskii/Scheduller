@@ -14,7 +14,7 @@ FROM deps AS dev
 COPY packages/shared ./packages/shared
 COPY apps/frontend ./apps/frontend
 EXPOSE 5173
-CMD ["pnpm", "--filter", "@park/frontend", "dev", "--", "--host", "0.0.0.0"]
+CMD ["pnpm", "--filter", "@scheduler/frontend", "dev", "--", "--host", "0.0.0.0"]
 
 FROM deps AS builder
 ARG VITE_API_URL=http://localhost:3000
@@ -23,8 +23,8 @@ ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_SOCKET_URL=$VITE_SOCKET_URL
 COPY packages/shared ./packages/shared
 COPY apps/frontend ./apps/frontend
-RUN pnpm --filter @park/shared build
-RUN pnpm --filter @park/frontend build
+RUN pnpm --filter @scheduler/shared build
+RUN pnpm --filter @scheduler/frontend build
 
 FROM nginx:alpine AS runner
 COPY apps/frontend/nginx.conf /etc/nginx/conf.d/default.conf

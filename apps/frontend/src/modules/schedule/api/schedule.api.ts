@@ -1,4 +1,4 @@
-import { scheduleEntrySchema } from '@park/shared';
+import { scheduleEntrySchema } from '@scheduler/shared';
 import { z } from 'zod';
 
 export type ScheduleEntry = z.infer<typeof scheduleEntrySchema>;

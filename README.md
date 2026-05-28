@@ -1,15 +1,15 @@
-# PARK
+# SCHEDULER
 
 Monorepo (Turborepo) do aplikacji do tworzenia grafików.
 
 ## Stack
 
-| Warstwa | Technologie |
-|---------|-------------|
-| Monorepo | Turborepo, pnpm |
+| Warstwa  | Technologie                                                                                   |
+| -------- | --------------------------------------------------------------------------------------------- |
+| Monorepo | Turborepo, pnpm                                                                               |
 | Frontend | React, Vite, Tailwind CSS v4, shadcn/ui, TanStack Query, TanStack Table, Socket.IO, Jest, Zod |
-| Backend | NestJS, Zod, Redis, Socket.IO, Supabase |
-| Infra | Docker (osobne kontenery frontend / backend), Redis |
+| Backend  | NestJS, Zod, Redis, Socket.IO, Supabase                                                       |
+| Infra    | Docker (osobne kontenery frontend / backend), Redis                                           |
 
 ## Struktura
 
@@ -50,13 +50,13 @@ cp apps/backend/.env.example apps/backend/.env
 cp apps/frontend/.env.example apps/frontend/.env
 
 # Redis (Docker)
-docker run -d --name park-redis -p 6379:6379 redis:7-alpine
+docker run -d --name scheduler-redis -p 6379:6379 redis:7-alpine
 
 pnpm dev
 ```
 
-- Frontend: http://localhost:5173  
-- API: http://localhost:3000/health  
+- Frontend: http://localhost:5173
+- API: http://localhost:3000/health
 
 ## Docker
 
@@ -76,12 +76,12 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 ## Skrypty
 
-| Komenda | Opis |
-|---------|------|
-| `pnpm dev` | Uruchamia frontend + backend (Turbo) |
-| `pnpm build` | Build wszystkich pakietów |
-| `pnpm lint` | ESLint w całym monorepo |
-| `pnpm test` | Testy (Jest) |
+| Komenda      | Opis                                 |
+| ------------ | ------------------------------------ |
+| `pnpm dev`   | Uruchamia frontend + backend (Turbo) |
+| `pnpm build` | Build wszystkich pakietów            |
+| `pnpm lint`  | ESLint w całym monorepo              |
+| `pnpm test`  | Testy (Jest)                         |
 
 ## Supabase
 

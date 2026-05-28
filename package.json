@@ -1,5 +1,5 @@
 {
-  "name": "park",
+  "name": "scheduler",
   "private": true,
   "scripts": {
     "build": "turbo run build",
