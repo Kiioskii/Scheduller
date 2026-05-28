@@ -8,6 +8,7 @@ import { SignUpPage } from '@/modules/auth/pages/sign-up-page';
 import { DashboardOverviewPage } from '@/pages/dashboard/overview-page';
 import { DashboardSchedulesPage } from '@/pages/dashboard/schedules-page';
 import { DashboardSettingsPage } from '@/pages/dashboard/settings-page';
+import { DashboardWorkersPage } from '@/pages/dashboard/workers-page';
 import { LandingPage } from '@/pages/landing-page';
 
 export function AppRouter() {
@@ -25,6 +26,7 @@ export function AppRouter() {
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<DashboardOverviewPage />} />
             <Route path="schedules" element={<DashboardSchedulesPage />} />
+            <Route path="workers" element={<DashboardWorkersPage />} />
             <Route path="settings" element={<DashboardSettingsPage />} />
           </Route>
         </Route>
