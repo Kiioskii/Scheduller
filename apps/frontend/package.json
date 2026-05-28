@@ -12,8 +12,9 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@scheduler/shared": "workspace:*",
     "@radix-ui/react-slot": "^1.2.3",
+    "@scheduler/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.49.8",
     "@tanstack/react-query": "^5.80.6",
     "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",
@@ -21,6 +22,7 @@
     "lucide-react": "^0.513.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-router-dom": "^7.15.1",
     "socket.io-client": "^4.8.1",
     "tailwind-merge": "^3.3.0",
     "zod": "^3.25.51"
