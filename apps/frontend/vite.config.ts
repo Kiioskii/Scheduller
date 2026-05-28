@@ -8,7 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@park/shared': path.resolve(__dirname, '../../packages/shared/src/index.ts'),
+      '@scheduler/shared': path.resolve(__dirname, '../../packages/shared/src/index.ts'),
     },
   },
   server: {

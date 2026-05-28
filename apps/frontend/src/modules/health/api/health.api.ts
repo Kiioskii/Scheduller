@@ -1,4 +1,4 @@
-import { healthResponseSchema } from '@park/shared';
+import { healthResponseSchema } from '@scheduler/shared';
 import { apiFetch } from '@/lib/http';
 import { z } from 'zod';
 

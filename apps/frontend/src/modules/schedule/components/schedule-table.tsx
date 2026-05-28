@@ -37,7 +37,7 @@ export function ScheduleTable() {
     <section className="rounded-lg border p-6">
       <h2 className="mb-2 text-lg font-medium">Przykładowy grafik</h2>
       <p className="mb-4 text-sm text-muted-foreground">
-        TanStack Table + wspólne schematy Zod z pakietem <code>@park/shared</code>.
+        TanStack Table + wspólne schematy Zod z pakietem <code>@scheduler/shared</code>.
       </p>
       {isLoading && <p className="text-muted-foreground">Ładowanie grafiku…</p>}
       {isError && <p className="text-destructive">Nie udało się załadować grafiku.</p>}

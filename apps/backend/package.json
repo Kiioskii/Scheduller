@@ -1,5 +1,5 @@
 {
-  "name": "@park/backend",
+  "name": "@scheduler/backend",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -18,7 +18,7 @@
     "@nestjs/platform-express": "^11.1.2",
     "@nestjs/platform-socket.io": "^11.1.2",
     "@nestjs/websockets": "^11.1.2",
-    "@park/shared": "workspace:*",
+    "@scheduler/shared": "workspace:*",
     "@supabase/supabase-js": "^2.49.8",
     "ioredis": "^5.6.1",
     "reflect-metadata": "^0.2.2",
