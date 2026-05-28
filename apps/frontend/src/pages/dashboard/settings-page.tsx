@@ -1,10 +1,21 @@
 import { useAuth } from '@/modules/auth/hooks/use-auth';
+import { ThemeSelect } from '@/modules/theme';
 
 export function DashboardSettingsPage() {
   const { user, session } = useAuth();
 
   return (
-    <div className="max-w-xl space-y-6">
+    <div className="max-w-xl space-y-8">
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-lg font-medium">Wygląd</h2>
+          <p className="text-sm text-muted-foreground">
+            Wybierz jasny, ciemny motyw lub dopasuj do ustawień systemu.
+          </p>
+        </div>
+        <ThemeSelect />
+      </div>
+
       <div>
         <h2 className="text-lg font-medium">Ustawienia konta</h2>
         <p className="text-sm text-muted-foreground">Informacje o zalogowanej sesji Supabase.</p>

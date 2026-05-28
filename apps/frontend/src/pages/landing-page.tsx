@@ -2,6 +2,7 @@ import { CalendarDays, LayoutGrid, Users, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/modules/theme';
 
 const features = [
   {
@@ -32,7 +33,8 @@ export function LandingPage() {
       <header className="border-b">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <span className="text-xl font-semibold tracking-tight">Scheduler</span>
-          <nav className="flex items-center gap-3">
+          <nav className="flex items-center gap-2">
+            <ThemeToggle />
             <Button variant="ghost" asChild>
               <Link to="/signin">Zaloguj się</Link>
             </Button>
