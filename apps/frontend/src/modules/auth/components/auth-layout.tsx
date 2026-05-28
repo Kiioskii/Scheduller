@@ -2,14 +2,17 @@ import { Link } from 'react-router-dom';
 
 import type { ReactNode } from 'react';
 
+import { ThemeToggle } from '@/modules/theme';
+
 export function AuthLayout({ children, title }: { children: ReactNode; title: string }) {
   return (
     <div className="flex min-h-screen flex-col bg-muted/30">
       <header className="border-b bg-background">
-        <div className="mx-auto flex h-14 max-w-lg items-center px-6">
+        <div className="mx-auto flex h-14 max-w-lg items-center justify-between px-6">
           <Link to="/" className="text-lg font-semibold tracking-tight">
             Scheduler
           </Link>
+          <ThemeToggle />
         </div>
       </header>
 

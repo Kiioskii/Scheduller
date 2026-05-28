@@ -4,6 +4,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/modules/auth/hooks/use-auth';
+import { ThemeToggle } from '@/modules/theme';
 
 const navItems = [
   { to: '/dashboard', label: 'Przegląd', icon: Home, end: true },
@@ -48,7 +49,8 @@ export function DashboardSidebar() {
         ))}
       </nav>
 
-      <div className="border-t p-3">
+      <div className="space-y-1 border-t p-3">
+        <ThemeToggle showLabel />
         <Button
           type="button"
           variant="ghost"
