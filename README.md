@@ -1,4 +1,4 @@
-# PARK
+# SCHEDULER
 
 Monorepo (Turborepo) do aplikacji do tworzenia grafików.
 
