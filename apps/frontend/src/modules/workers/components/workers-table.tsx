@@ -44,14 +44,12 @@ function matchesSearch(worker: Worker, query: string): boolean {
   const fullName = `${firstName} ${lastName}`;
 
   return (
-    firstName.includes(normalized) ||
-    lastName.includes(normalized) ||
-    fullName.includes(normalized)
+    firstName.includes(normalized) || lastName.includes(normalized) || fullName.includes(normalized)
   );
 }
 
 export function WorkersTable() {
-  const { data = [], isLoading, isError } = useWorkers();
+  const { data = [], isLoading, isError, error } = useWorkers();
   const { updateWorker, updatePriority, deleteWorker, restoreWorker, isUpdating } =
     useWorkerMutations();
   const [search, setSearch] = useState('');
@@ -60,7 +58,10 @@ export function WorkersTable() {
   const [showImportForm, setShowImportForm] = useState(false);
 
   const filteredData = useMemo(
-    () => data.filter((worker) => matchesSearch(worker, search) && matchesWorkerFilters(worker, filters)),
+    () =>
+      data.filter(
+        (worker) => matchesSearch(worker, search) && matchesWorkerFilters(worker, filters),
+      ),
     [data, search, filters],
   );
 
@@ -137,7 +138,7 @@ export function WorkersTable() {
         },
       }),
       columnHelper.accessor('checker', {
-        header: 'Checker',
+        header: 'Sprawdzający',
         cell: (info) => {
           const worker = info.row.original;
           const checked = info.getValue();
@@ -148,7 +149,7 @@ export function WorkersTable() {
               size="sm"
               disabled={isUpdating || worker.deleted}
               aria-pressed={checked}
-              aria-label={`Checker dla ${worker.firstName} ${worker.lastName}: ${checked ? 'włączony' : 'wyłączony'}`}
+              aria-label={`Sprawdzający dla ${worker.firstName} ${worker.lastName}: ${checked ? 'włączony' : 'wyłączony'}`}
               onClick={() => updateWorker.mutate({ id: worker.id, checker: !checked })}
               className="min-w-[4.5rem] gap-1.5"
             >
@@ -276,7 +277,12 @@ export function WorkersTable() {
       {showImportForm && <ImportWorkersForm onClose={() => setShowImportForm(false)} />}
 
       {isLoading && <p className="text-muted-foreground">Ładowanie pracowników…</p>}
-      {isError && <p className="text-destructive">Nie udało się załadować listy pracowników.</p>}
+      {isError && (
+        <p className="text-destructive">
+          Nie udało się załadować listy pracowników.
+          {error instanceof Error && error.message ? ` (${error.message})` : null}
+        </p>
+      )}
 
       {!isLoading && !isError && (
         <>

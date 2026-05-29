@@ -4,22 +4,13 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  createWorkerInputSchema,
-  updateWorkerInputSchema,
-  type Worker,
-} from '@scheduler/shared';
+import { createWorkerInputSchema, updateWorkerInputSchema, type Worker } from '@scheduler/shared';
 import { SupabaseService } from 'src/supabase/supabase.service';
-import {
-  createInputToRow,
-  rowToWorker,
-  updateInputToRow,
-  type WorkerRow,
-} from './workers.mapper';
+import { createInputToRow, rowToWorker, updateInputToRow, type WorkerRow } from './workers.mapper';
 
 @Injectable()
 export class WorkersService {
-  private static readonly TABLE = 'workers';
+  private static readonly TABLE = 'Workers';
 
   constructor(private readonly supabaseService: SupabaseService) {}
 
@@ -45,6 +36,7 @@ export class WorkersService {
     }
 
     const supabase = this.supabaseService.getClient();
+
     const { data, error } = await supabase
       .from(WorkersService.TABLE)
       .insert(createInputToRow(parsed.data))

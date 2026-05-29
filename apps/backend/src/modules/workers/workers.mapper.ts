@@ -6,7 +6,7 @@ import {
 } from '@scheduler/shared';
 
 export type WorkerRow = {
-  id: string;
+  id: number | string;
   first_name: string;
   last_name: string;
   role: 'boss' | 'worker';
@@ -17,7 +17,7 @@ export type WorkerRow = {
 
 export function rowToWorker(row: WorkerRow): Worker {
   return workerSchema.parse({
-    id: row.id,
+    id: String(row.id),
     firstName: row.first_name,
     lastName: row.last_name,
     role: row.role,

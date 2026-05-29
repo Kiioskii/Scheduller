@@ -48,7 +48,16 @@ async function handleResponse(res: Response): Promise<unknown> {
 export async function fetchWorkers(): Promise<Worker[]> {
   const res = await apiFetch(WORKERS_PATH);
   const json = await handleResponse(res);
-  return workerSchema.array().parse(json);
+
+  console.log('json ', json);
+
+  const parsed = workerSchema.array().safeParse(json);
+  console.log('parsed ', parsed);
+  if (!parsed.success) {
+    console.error('Workers API response failed validation', parsed.error.flatten());
+    throw parsed.error;
+  }
+  return parsed.data;
 }
 
 export async function createWorker(
