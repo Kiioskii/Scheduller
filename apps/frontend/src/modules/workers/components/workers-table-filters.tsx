@@ -52,7 +52,7 @@ export function WorkersTableFilters({ filters, onChange }: WorkersTableFiltersPr
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="filter-checker">Checker</Label>
+        <Label htmlFor="filter-checker">Sprawdzający</Label>
         <select
           id="filter-checker"
           value={filters.checker}

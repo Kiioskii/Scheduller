@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { WorkersService } from './workers.service';
 
 @Controller('workers')
@@ -16,7 +16,7 @@ export class WorkersController {
   }
 
   @Patch(':id')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() body: unknown) {
+  update(@Param('id') id: string, @Body() body: unknown) {
     return this.workersService.updateWorker(id, body);
   }
 }

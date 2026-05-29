@@ -3,8 +3,11 @@ import { z } from 'zod';
 export const workerRoleSchema = z.enum(['boss', 'worker']);
 export const workerPrioritySchema = z.number().int().min(1).max(10);
 
+/** Supabase workers.id is bigint — exposed in API as string */
+export const workerIdSchema = z.coerce.string().min(1);
+
 export const workerSchema = z.object({
-  id: z.string().uuid(),
+  id: workerIdSchema,
   firstName: z.string().min(2),
   lastName: z.string().min(2),
   role: workerRoleSchema,
