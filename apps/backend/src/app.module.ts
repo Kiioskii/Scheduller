@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppGateway } from './app.gateway';
 import { RedisModule } from './redis/redis.module';
 import { SupabaseModule } from './supabase/supabase.module';
+import { WorkersModule } from './modules/workers/workers.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { SupabaseModule } from './supabase/supabase.module';
     }),
     RedisModule,
     SupabaseModule,
+    WorkersModule,
   ],
   controllers: [AppController],
   providers: [AppGateway],

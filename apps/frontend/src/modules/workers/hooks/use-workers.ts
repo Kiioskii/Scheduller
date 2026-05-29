@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CreateWorkerInput } from '@scheduler/shared';
+import type { CreateWorkerInput, UpdateWorkerInput } from '@scheduler/shared';
 
 import {
   createWorker,
   createWorkers,
   deleteWorker,
   fetchWorkers,
+  restoreWorker,
+  updateWorker,
   updateWorkerPriority,
   workerKeys,
 } from '../api/worker.api';
@@ -34,6 +36,11 @@ export function useWorkerMutations() {
     onSuccess: invalidateWorkers,
   });
 
+  const updateWorkerMutation = useMutation({
+    mutationFn: ({ id, ...patch }: { id: string } & UpdateWorkerInput) => updateWorker(id, patch),
+    onSuccess: invalidateWorkers,
+  });
+
   const updatePriorityMutation = useMutation({
     mutationFn: ({ id, priority }: { id: string; priority: number }) =>
       updateWorkerPriority(id, priority),
@@ -45,10 +52,20 @@ export function useWorkerMutations() {
     onSuccess: invalidateWorkers,
   });
 
+  const restoreMutation = useMutation({
+    mutationFn: (id: string) => restoreWorker(id),
+    onSuccess: invalidateWorkers,
+  });
+
+  const isUpdating = updateWorkerMutation.isPending || updatePriorityMutation.isPending;
+
   return {
     createWorker: createMutation,
     createWorkersBulk: createBulkMutation,
+    updateWorker: updateWorkerMutation,
     updatePriority: updatePriorityMutation,
     deleteWorker: deleteMutation,
+    restoreWorker: restoreMutation,
+    isUpdating,
   };
 }

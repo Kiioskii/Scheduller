@@ -13,7 +13,7 @@ services:
       CORS_ORIGIN: http://localhost:5173
     ports:
       - '3000:3000'
-    command: pnpm --filter @scheduler/backend dev
+    command: sh -c "pnpm --filter @scheduler/shared dev & pnpm --filter @scheduler/backend dev"
 
   frontend:
     build:
