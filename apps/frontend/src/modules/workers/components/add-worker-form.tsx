@@ -6,9 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+import type { Worker } from '@scheduler/shared';
+
 import { useWorkerMutations } from '../hooks/use-workers';
 
 const PRIORITY_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
+
+const ROLE_OPTIONS = [
+  { value: 'worker', label: 'Pracownik' },
+  { value: 'boss', label: 'Szef' },
+] as const satisfies ReadonlyArray<{ value: Worker['role']; label: string }>;
 
 type AddWorkerFormProps = {
   onClose: () => void;
@@ -19,17 +26,27 @@ export function AddWorkerForm({ onClose }: AddWorkerFormProps) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [priority, setPriority] = useState(5);
+  const [role, setRole] = useState<Worker['role']>('worker');
+  const [checker, setChecker] = useState(false);
 
   function resetForm() {
     setFirstName('');
     setLastName('');
     setPriority(5);
+    setRole('worker');
+    setChecker(false);
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     createWorker.mutate(
-      { firstName: firstName.trim(), lastName: lastName.trim(), priority },
+      {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        priority,
+        role,
+        checker,
+      },
       {
         onSuccess: () => {
           resetForm();
@@ -98,7 +115,34 @@ export function AddWorkerForm({ onClose }: AddWorkerFormProps) {
           ))}
         </select>
       </div>
-      <div className="flex items-end gap-2">
+      <div className="space-y-2">
+        <Label htmlFor="worker-role">Rola</Label>
+        <select
+          id="worker-role"
+          value={role}
+          onChange={(e) => setRole(e.target.value as Worker['role'])}
+          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+          {ROLE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex items-end gap-2 pb-1">
+        <input
+          id="worker-checker"
+          type="checkbox"
+          checked={checker}
+          onChange={(e) => setChecker(e.target.checked)}
+          className="size-4 rounded border border-input"
+        />
+        <Label htmlFor="worker-checker" className="cursor-pointer font-normal">
+          Checker
+        </Label>
+      </div>
+      <div className="flex items-end gap-2 sm:col-span-2">
         <Button type="submit" disabled={!canSubmit}>
           {createWorker.isPending ? 'Dodawanie…' : 'Zapisz'}
         </Button>

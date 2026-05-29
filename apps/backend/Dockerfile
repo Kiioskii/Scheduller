@@ -19,8 +19,9 @@ RUN pnpm --filter @scheduler/backend build
 FROM deps AS dev
 COPY packages/shared ./packages/shared
 COPY apps/backend ./apps/backend
+RUN pnpm --filter @scheduler/shared build
 EXPOSE 3000
-CMD ["pnpm", "--filter", "@scheduler/backend", "dev"]
+CMD ["sh", "-c", "pnpm --filter @scheduler/shared dev & pnpm --filter @scheduler/backend dev"]
 
 FROM builder AS runner
 WORKDIR /app

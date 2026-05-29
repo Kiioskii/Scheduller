@@ -5,19 +5,35 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { Plus, Search, Trash2, Upload } from 'lucide-react';
+import { Check, Plus, RotateCcw, Search, Trash2, Upload, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 import type { Worker } from '../api/worker.api';
 import { useWorkerMutations, useWorkers } from '../hooks/use-workers';
+import {
+  defaultWorkerTableFilters,
+  hasActiveWorkerFilters,
+  matchesWorkerFilters,
+  type WorkerTableFilters,
+} from '../lib/worker-filters';
 import { AddWorkerForm } from './add-worker-form';
 import { ImportWorkersForm } from './import-workers-form';
+import { WorkersTableFilters } from './workers-table-filters';
 
 const PRIORITY_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
 
+const ROLE_OPTIONS = [
+  { value: 'boss', label: 'Szef' },
+  { value: 'worker', label: 'Pracownik' },
+] as const;
+
 const columnHelper = createColumnHelper<Worker>();
+
+const cellSelectClassName =
+  'h-8 rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50';
 
 function matchesSearch(worker: Worker, query: string): boolean {
   const normalized = query.trim().toLowerCase();
@@ -36,17 +52,20 @@ function matchesSearch(worker: Worker, query: string): boolean {
 
 export function WorkersTable() {
   const { data = [], isLoading, isError } = useWorkers();
-  const { updatePriority, deleteWorker } = useWorkerMutations();
+  const { updateWorker, updatePriority, deleteWorker, restoreWorker, isUpdating } =
+    useWorkerMutations();
   const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<WorkerTableFilters>(defaultWorkerTableFilters);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showImportForm, setShowImportForm] = useState(false);
 
   const filteredData = useMemo(
-    () => data.filter((worker) => matchesSearch(worker, search)),
-    [data, search],
+    () => data.filter((worker) => matchesSearch(worker, search) && matchesWorkerFilters(worker, filters)),
+    [data, search, filters],
   );
 
   const isSearching = search.trim().length > 0;
+  const filtersActive = hasActiveWorkerFilters(filters) || isSearching;
 
   function openAddForm() {
     setShowImportForm(false);
@@ -58,63 +77,153 @@ export function WorkersTable() {
     setShowImportForm(true);
   }
 
-  const columns = [
-    columnHelper.accessor('firstName', {
-      header: 'Imię',
-      cell: (info) => info.getValue(),
-    }),
-    columnHelper.accessor('lastName', {
-      header: 'Nazwisko',
-      cell: (info) => info.getValue(),
-    }),
-    columnHelper.accessor('priority', {
-      header: 'Priorytet',
-      cell: (info) => {
-        const worker = info.row.original;
-        return (
-          <select
-            value={info.getValue()}
-            disabled={updatePriority.isPending}
-            onChange={(e) =>
-              updatePriority.mutate({ id: worker.id, priority: Number(e.target.value) })
-            }
-            className="h-8 rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            aria-label={`Priorytet dla ${worker.firstName} ${worker.lastName}`}
-          >
-            {PRIORITY_OPTIONS.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        );
-      },
-    }),
-    columnHelper.display({
-      id: 'actions',
-      header: '',
-      cell: (info) => {
-        const worker = info.row.original;
-        return (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="text-destructive hover:text-destructive"
-            disabled={deleteWorker.isPending}
-            aria-label={`Usuń ${worker.firstName} ${worker.lastName}`}
-            onClick={() => {
-              if (window.confirm(`Usunąć pracownika ${worker.firstName} ${worker.lastName}?`)) {
-                deleteWorker.mutate(worker.id);
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor('firstName', {
+        header: 'Imię',
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.accessor('lastName', {
+        header: 'Nazwisko',
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.accessor('role', {
+        header: 'Rola',
+        cell: (info) => {
+          const worker = info.row.original;
+          return (
+            <select
+              value={info.getValue()}
+              disabled={isUpdating || worker.deleted}
+              onChange={(e) =>
+                updateWorker.mutate({
+                  id: worker.id,
+                  role: e.target.value as Worker['role'],
+                })
               }
-            }}
+              className={cellSelectClassName}
+              aria-label={`Rola dla ${worker.firstName} ${worker.lastName}`}
+            >
+              {ROLE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          );
+        },
+      }),
+      columnHelper.accessor('priority', {
+        header: 'Priorytet',
+        cell: (info) => {
+          const worker = info.row.original;
+          return (
+            <select
+              value={info.getValue()}
+              disabled={isUpdating || worker.deleted}
+              onChange={(e) =>
+                updatePriority.mutate({ id: worker.id, priority: Number(e.target.value) })
+              }
+              className={cellSelectClassName}
+              aria-label={`Priorytet dla ${worker.firstName} ${worker.lastName}`}
+            >
+              {PRIORITY_OPTIONS.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          );
+        },
+      }),
+      columnHelper.accessor('checker', {
+        header: 'Checker',
+        cell: (info) => {
+          const worker = info.row.original;
+          const checked = info.getValue();
+          return (
+            <Button
+              type="button"
+              variant={checked ? 'default' : 'outline'}
+              size="sm"
+              disabled={isUpdating || worker.deleted}
+              aria-pressed={checked}
+              aria-label={`Checker dla ${worker.firstName} ${worker.lastName}: ${checked ? 'włączony' : 'wyłączony'}`}
+              onClick={() => updateWorker.mutate({ id: worker.id, checker: !checked })}
+              className="min-w-[4.5rem] gap-1.5"
+            >
+              {checked ? (
+                <>
+                  <Check className="size-3.5" />
+                  Tak
+                </>
+              ) : (
+                <>
+                  <X className="size-3.5" />
+                  Nie
+                </>
+              )}
+            </Button>
+          );
+        },
+      }),
+      columnHelper.accessor('deleted', {
+        header: 'Status',
+        cell: (info) => (
+          <span
+            className={cn(
+              'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
+              info.getValue()
+                ? 'bg-destructive/10 text-destructive'
+                : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+            )}
           >
-            <Trash2 className="size-4" />
-          </Button>
-        );
-      },
-    }),
-  ];
+            {info.getValue() ? 'Usunięty' : 'Aktywny'}
+          </span>
+        ),
+      }),
+      columnHelper.display({
+        id: 'actions',
+        header: '',
+        cell: (info) => {
+          const worker = info.row.original;
+          if (worker.deleted) {
+            return (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                disabled={restoreWorker.isPending}
+                aria-label={`Przywróć ${worker.firstName} ${worker.lastName}`}
+                onClick={() => restoreWorker.mutate(worker.id)}
+              >
+                <RotateCcw className="size-4" />
+              </Button>
+            );
+          }
+
+          return (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:text-destructive"
+              disabled={deleteWorker.isPending}
+              aria-label={`Usuń ${worker.firstName} ${worker.lastName}`}
+              onClick={() => {
+                if (window.confirm(`Usunąć pracownika ${worker.firstName} ${worker.lastName}?`)) {
+                  deleteWorker.mutate(worker.id);
+                }
+              }}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          );
+        },
+      }),
+    ],
+    [deleteWorker, isUpdating, restoreWorker, updatePriority, updateWorker],
+  );
 
   const table = useReactTable({
     data: filteredData,
@@ -122,8 +231,8 @@ export function WorkersTable() {
     getCoreRowModel: getCoreRowModel(),
   });
 
-  const emptyMessage = isSearching
-    ? 'Brak wyników dla podanego wyszukiwania.'
+  const emptyMessage = filtersActive
+    ? 'Brak pracowników pasujących do wyszukiwania lub filtrów.'
     : 'Brak pracowników. Dodaj pierwszego przyciskiem „Dodaj pracownika”.';
 
   return (
@@ -161,6 +270,8 @@ export function WorkersTable() {
         </div>
       </div>
 
+      <WorkersTableFilters filters={filters} onChange={setFilters} />
+
       {showAddForm && <AddWorkerForm onClose={() => setShowAddForm(false)} />}
       {showImportForm && <ImportWorkersForm onClose={() => setShowImportForm(false)} />}
 
@@ -169,7 +280,7 @@ export function WorkersTable() {
 
       {!isLoading && !isError && (
         <>
-          {isSearching && (
+          {filtersActive && (
             <p className="text-sm text-muted-foreground">
               Wyniki: {filteredData.length} z {data.length}
             </p>
@@ -202,7 +313,10 @@ export function WorkersTable() {
                   </tr>
                 ) : (
                   table.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="border-t">
+                    <tr
+                      key={row.id}
+                      className={cn('border-t', row.original.deleted && 'bg-muted/30 opacity-70')}
+                    >
                       {row.getVisibleCells().map((cell) => (
                         <td key={cell.id} className="px-4 py-3">
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}

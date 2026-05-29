@@ -83,7 +83,12 @@ function mapRowByHeaders(
   }
 
   const priority = parsePriority(priorityRaw, rowIndex, errors);
-  const parsed = createWorkerInputSchema.safeParse({ firstName, lastName, priority });
+  const parsed = createWorkerInputSchema.safeParse({
+    firstName,
+    lastName,
+    priority,
+    role: 'worker',
+  });
   if (!parsed.success) {
     errors.push(`Wiersz ${rowIndex}: ${parsed.error.issues[0]?.message ?? 'nieprawidłowe dane'}.`);
     return null;
