@@ -101,3 +101,11 @@ pnpm dlx shadcn@latest add card table dialog
 ## ESLint
 
 Konfiguracja flat w `eslint.config.mjs` (root). Uruchomienie: `pnpm lint`.
+
+## TESTY
+
+cd apps/backend && pnpm test
+
+# lub watch:
+
+pnpm test:watch
