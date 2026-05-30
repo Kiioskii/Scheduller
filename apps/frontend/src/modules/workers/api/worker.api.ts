@@ -7,6 +7,7 @@ import {
   type UpdateWorkerInput,
   type Worker,
 } from '@scheduler/shared';
+import { z } from 'zod';
 import { apiFetch } from '@/lib/http';
 
 export type { Worker, CreateWorkerInput, UpdateWorkerInput };
@@ -29,10 +30,13 @@ async function readJson(res: Response): Promise<unknown> {
 }
 
 function apiErrorMessage(json: unknown, status: number): string {
-  if (typeof json === 'object' && json !== null && 'message' in json) {
-    const { message } = json as { message: unknown };
-    if (typeof message === 'string') return message;
-    if (Array.isArray(message)) return message.map(String).join(', ');
+  if (typeof json === 'object' && json !== null) {
+    const payload = json as { message?: unknown; errors?: unknown };
+    if (Array.isArray(payload.errors) && payload.errors.length > 0) {
+      return payload.errors.map(String).join('\n');
+    }
+    if (typeof payload.message === 'string') return payload.message;
+    if (Array.isArray(payload.message)) return payload.message.map(String).join(', ');
   }
   return `Żądanie nie powiodło się (${status})`;
 }
@@ -48,16 +52,23 @@ async function handleResponse(res: Response): Promise<unknown> {
 export async function fetchWorkers(): Promise<Worker[]> {
   const res = await apiFetch(WORKERS_PATH);
   const json = await handleResponse(res);
-
-  console.log('json ', json);
-
   const parsed = workerSchema.array().safeParse(json);
-  console.log('parsed ', parsed);
   if (!parsed.success) {
-    console.error('Workers API response failed validation', parsed.error.flatten());
     throw parsed.error;
   }
   return parsed.data;
+}
+
+export async function parseWorkersImport(file: File): Promise<CreateWorkerInput[]> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await apiFetch(`${WORKERS_PATH}/import/parse`, {
+    method: 'POST',
+    body: formData,
+  });
+  const json = await handleResponse(res);
+  return z.array(createWorkerInputSchema).parse(json);
 }
 
 export async function createWorker(
