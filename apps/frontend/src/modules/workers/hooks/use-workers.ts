@@ -6,6 +6,7 @@ import {
   createWorkers,
   deleteWorker,
   fetchWorkers,
+  parseWorkersImport,
   restoreWorker,
   updateWorker,
   updateWorkerPriority,
@@ -36,6 +37,10 @@ export function useWorkerMutations() {
     onSuccess: invalidateWorkers,
   });
 
+  const parseImportMutation = useMutation({
+    mutationFn: (file: File) => parseWorkersImport(file),
+  });
+
   const updateWorkerMutation = useMutation({
     mutationFn: ({ id, ...patch }: { id: string } & UpdateWorkerInput) => updateWorker(id, patch),
     onSuccess: invalidateWorkers,
@@ -62,6 +67,7 @@ export function useWorkerMutations() {
   return {
     createWorker: createMutation,
     createWorkersBulk: createBulkMutation,
+    parseWorkersImport: parseImportMutation,
     updateWorker: updateWorkerMutation,
     updatePriority: updatePriorityMutation,
     deleteWorker: deleteMutation,

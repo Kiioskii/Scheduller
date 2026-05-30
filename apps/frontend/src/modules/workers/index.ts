@@ -3,6 +3,7 @@ export {
   createWorkers,
   deleteWorker,
   fetchWorkers,
+  parseWorkersImport,
   restoreWorker,
   updateWorker,
   updateWorkerPriority,
