@@ -4,7 +4,12 @@ module.exports = {
   rootDir: 'src',
   testRegex: '.*\\.spec\\.ts$',
   transform: {
-    '^.+\\.(t|j)s$': 'ts-jest',
+    '^.+\\.ts$': 'ts-jest',
+  },
+  moduleNameMapper: {
+    '^@scheduler/shared$': '<rootDir>/../../../packages/shared/src/index.ts',
+    '^@scheduler/shared/(.*)$': '<rootDir>/../../../packages/shared/src/$1',
+    '^src/(.*)$': '<rootDir>/$1',
   },
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',

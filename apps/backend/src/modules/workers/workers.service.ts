@@ -11,7 +11,7 @@ import {
   type Worker,
 } from '@scheduler/shared';
 import { FilesService } from '../files/files.service';
-import { SupabaseService } from 'src/supabase/supabase.service';
+import { SupabaseService } from '../../supabase/supabase.service';
 import { createInputToRow, rowToWorker, updateInputToRow, type WorkerRow } from './workers.mapper';
 
 @Injectable()
