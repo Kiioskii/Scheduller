@@ -2,6 +2,17 @@
 # Użycie: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 services:
+  scheduler-engine:
+    build:
+      target: dev
+    volumes:
+      - ./services/scheduler-engine/src:/app/src
+    environment:
+      ENVIRONMENT: development
+      LOG_LEVEL: DEBUG
+    ports:
+      - '8000:8000'
+
   backend:
     build:
       target: dev
@@ -11,8 +22,14 @@ services:
     environment:
       NODE_ENV: development
       CORS_ORIGIN: http://localhost:5173
+      SCHEDULER_ENGINE_URL: http://scheduler-engine:8000
     ports:
       - '3000:3000'
+    depends_on:
+      redis:
+        condition: service_healthy
+      scheduler-engine:
+        condition: service_started
     command: sh -c "pnpm --filter @scheduler/shared dev & pnpm --filter @scheduler/backend dev"
 
   frontend:
@@ -27,7 +44,10 @@ services:
       VITE_SOCKET_URL: http://localhost:3000
     ports:
       - '5173:5173'
-    command: pnpm --filter @scheduler/frontend dev
+    depends_on:
+      backend:
+        condition: service_started
+    command: pnpm --filter @scheduler/frontend dev -- --host 0.0.0.0
 
   redis:
     ports:

@@ -11,6 +11,33 @@ services:
       timeout: 3s
       retries: 5
 
+  scheduler-engine:
+    build:
+      context: ./services/scheduler-engine
+      dockerfile: Dockerfile
+    environment:
+      ENVIRONMENT: production
+      PORT: 8000
+      REDIS_URL: redis://redis:6379
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
+    expose:
+      - '8000'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/internal/v1/health/live')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      redis:
+        condition: service_healthy
+
   backend:
     build:
       context: .
@@ -24,8 +51,12 @@ services:
       CORS_ORIGIN: http://localhost:8080
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SCHEDULER_ENGINE_URL: http://scheduler-engine:8000
+      SCHEDULER_ENGINE_API_KEY: ${INTERNAL_API_KEY:-}
     depends_on:
       redis:
+        condition: service_healthy
+      scheduler-engine:
         condition: service_healthy
 
   frontend:

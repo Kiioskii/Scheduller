@@ -9,14 +9,17 @@ Monorepo (Turborepo) do aplikacji do tworzenia grafików.
 | Monorepo | Turborepo, pnpm                                                                               |
 | Frontend | React, Vite, Tailwind CSS v4, shadcn/ui, TanStack Query, TanStack Table, Socket.IO, Jest, Zod |
 | Backend  | NestJS, Zod, Redis, Socket.IO, Supabase                                                       |
-| Infra    | Docker (osobne kontenery frontend / backend), Redis                                           |
+| Engine   | Python 3.12, FastAPI, Pydantic (wewnętrzny serwis)                                            |
+| Infra    | Docker (frontend / backend / scheduler-engine), Redis                                         |
 
 ## Struktura
 
 ```
 apps/
   frontend/   # React (port 5173 dev, 8080 Docker prod)
-  backend/    # NestJS (port 3000)
+  backend/    # NestJS (port 3000) — publiczne API
+services/
+  scheduler-engine/  # FastAPI (port 8000, tylko wewnętrznie)
 packages/
   shared/     # Wspólne schematy Zod
 ```
@@ -39,6 +42,7 @@ Współdzielone: `src/components/ui` (shadcn), `src/lib` (utils, http).
 
 - Node.js ≥ 20
 - pnpm 9 (`corepack enable`)
+- Python ≥ 3.12 (opcjonalnie, do lokalnego `scheduler-engine`)
 - Docker & Docker Compose (opcjonalnie)
 
 ## Szybki start (lokalnie)
@@ -57,6 +61,7 @@ pnpm dev
 
 - Frontend: http://localhost:5173
 - API: http://localhost:3000/health
+- Scheduler engine (osobno): `cd services/scheduler-engine && cp .env.example .env` — patrz [services/scheduler-engine/README.md](services/scheduler-engine/README.md)
 
 ## Docker
 
