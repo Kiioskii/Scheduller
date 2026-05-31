@@ -22,6 +22,10 @@ tests/
 
 Publiczny kontrakt dla NestJS: **`/internal/v1/*`**.
 
+### Pliki (podkład)
+
+`GET /internal/v1/files/podklad/template?year=2026&month=6` — generuje xlsx z szablonu (`assets/podklad_template.xlsx`), zachowując style i formuły.
+
 ## Wymagania
 
 - Python ≥ 3.12

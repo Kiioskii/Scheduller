@@ -12,7 +12,6 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 
-import { buildPodkladContentDisposition } from './schedule-podklad.generator';
 import { SchedulesService } from './schedules.service';
 
 @Controller('schedules')
@@ -20,19 +19,22 @@ export class SchedulesController {
   constructor(private readonly schedulesService: SchedulesService) {}
 
   @Get('template')
-  downloadTemplate(
+  async downloadTemplate(
     @Query('year') yearParam: string,
     @Query('month') monthParam: string,
     @Res() res: Response,
   ) {
     const year = Number(yearParam);
     const month = Number(monthParam);
-    const { buffer, fileName } = this.schedulesService.generatePodkladTemplate(year, month);
+    const { buffer, contentDisposition } = await this.schedulesService.generatePodkladTemplate(
+      year,
+      month,
+    );
 
     res
       .status(200)
       .setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-      .setHeader('Content-Disposition', buildPodkladContentDisposition(fileName))
+      .setHeader('Content-Disposition', contentDisposition)
       .send(buffer);
   }
 

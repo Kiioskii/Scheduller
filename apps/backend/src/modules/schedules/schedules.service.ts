@@ -5,22 +5,22 @@ import {
   type ImportedScheduleFile,
 } from '@scheduler/shared';
 
+import { SchedulerEngineService } from '../../scheduler-engine/scheduler-engine.service';
 import { FilesService, type UploadFilePayload } from '../files/files.service';
-import {
-  formatPodkladFileName,
-  generateSchedulePodkladBuffer,
-} from './schedule-podklad.generator';
 
 @Injectable()
 export class SchedulesService {
-  constructor(private readonly filesService: FilesService) {}
+  constructor(
+    private readonly filesService: FilesService,
+    private readonly schedulerEngine: SchedulerEngineService,
+  ) {}
 
-  generatePodkladTemplate(year: number, month: number): { buffer: Buffer; fileName: string } {
+  async generatePodkladTemplate(
+    year: number,
+    month: number,
+  ): Promise<{ buffer: Buffer; fileName: string; contentDisposition: string }> {
     const normalized = this.normalizeYearMonth(year, month);
-    return {
-      buffer: generateSchedulePodkladBuffer(normalized.year, normalized.month),
-      fileName: formatPodkladFileName(normalized.year, normalized.month),
-    };
+    return this.schedulerEngine.fetchPodkladTemplate(normalized.year, normalized.month);
   }
 
   private normalizeYearMonth(year: number, month: number): { year: number; month: number } {

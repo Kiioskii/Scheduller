@@ -5,6 +5,7 @@ import { AppGateway } from './app.gateway';
 import { RedisModule } from './redis/redis.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
+import { SchedulerEngineModule } from './scheduler-engine/scheduler-engine.module';
 import { WorkersModule } from './modules/workers/workers.module';
 
 @Module({
@@ -14,6 +15,7 @@ import { WorkersModule } from './modules/workers/workers.module';
       envFilePath: ['.env.local', '.env'],
     }),
     RedisModule,
+    SchedulerEngineModule,
     SupabaseModule,
     WorkersModule,
     SchedulesModule,

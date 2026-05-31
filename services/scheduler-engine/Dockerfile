@@ -8,23 +8,25 @@ WORKDIR /app
 
 FROM base AS builder
 RUN pip install --upgrade pip
-COPY pyproject.toml README.md ./
+COPY requirements.txt pyproject.toml README.md ./
+RUN pip install -r requirements.txt
 COPY src ./src
-RUN pip install .
+RUN pip install --no-deps .
 
 FROM base AS runner
 ENV ENVIRONMENT=production \
     PORT=8000
 COPY --from=builder /usr/local /usr/local
-COPY pyproject.toml README.md ./
+COPY requirements.txt pyproject.toml README.md ./
 COPY src ./src
 EXPOSE 8000
 CMD ["uvicorn", "scheduler_engine.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 FROM base AS dev
 RUN pip install --upgrade pip
-COPY pyproject.toml README.md ./
+COPY requirements-dev.txt requirements.txt pyproject.toml README.md ./
+RUN pip install -r requirements-dev.txt
 COPY src ./src
-RUN pip install -e ".[dev]"
+RUN pip install --no-deps -e .
 EXPOSE 8000
 CMD ["uvicorn", "scheduler_engine.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
