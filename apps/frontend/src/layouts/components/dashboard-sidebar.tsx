@@ -8,7 +8,7 @@ import { ThemeToggle } from '@/modules/theme';
 
 const navItems = [
   { to: '/dashboard', label: 'Przegląd', icon: Home, end: true },
-  { to: '/dashboard/schedules', label: 'Grafiki', icon: CalendarDays, end: false },
+  { to: '/dashboard/drafts', label: 'Podkłady', icon: CalendarDays, end: false },
   { to: '/dashboard/workers', label: 'Pracownicy', icon: Users, end: false },
   { to: '/dashboard/settings', label: 'Ustawienia', icon: Settings, end: false },
 ];

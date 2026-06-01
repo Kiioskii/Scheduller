@@ -8,5 +8,6 @@ import { SupabaseModule } from '../../supabase/supabase.module';
   imports: [SupabaseModule, FilesModule],
   providers: [WorkersService],
   controllers: [WorkersController],
+  exports: [WorkersService],
 })
 export class WorkersModule {}
