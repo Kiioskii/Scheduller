@@ -3,15 +3,16 @@ import { Download, Loader2, Upload } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
-  formatScheduleTitle,
+  formatScheduleMonth,
   getCurrentScheduleMonth,
   ImportSchedulesForm,
+  ReceivedSchedulesTable,
   ScheduleMonthPicker,
   useScheduleMutations,
   type ScheduleMonth,
 } from '@/modules/schedule';
 
-export function DashboardSchedulesPage() {
+export function DashboardDraftsPage() {
   const [selectedMonth, setSelectedMonth] = useState<ScheduleMonth>(getCurrentScheduleMonth);
   const [showImportForm, setShowImportForm] = useState(false);
   const { downloadPodklad } = useScheduleMutations();
@@ -20,9 +21,9 @@ export function DashboardSchedulesPage() {
     <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-lg font-medium">Grafiki</h2>
+          <h2 className="text-lg font-medium">Podkłady</h2>
           <p className="text-sm text-muted-foreground">
-            Wybierz miesiąc, pobierz podkład lub importuj pliki Excel z grafikami.
+            Wybierz miesiąc, pobierz podkład lub importuj pliki Excel z podkładami.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -68,7 +69,11 @@ export function DashboardSchedulesPage() {
         />
       )}
 
-      <h3 className="text-base font-semibold tracking-tight">{formatScheduleTitle(selectedMonth)}</h3>
+      <h3 className="text-base font-semibold tracking-tight">
+        Podkłady — {formatScheduleMonth(selectedMonth)}
+      </h3>
+
+      <ReceivedSchedulesTable month={selectedMonth} />
     </div>
   );
 }

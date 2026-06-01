@@ -42,6 +42,25 @@ export class WorkersService {
     return (data as WorkerRow[]).map(rowToWorker);
   }
 
+  async getWorkerById(id: string): Promise<Worker> {
+    const supabase = this.supabaseService.getClient();
+    const { data, error } = await supabase
+      .from(WorkersService.TABLE)
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    if (!data) {
+      throw new NotFoundException(`Worker with id ${id} not found`);
+    }
+
+    return rowToWorker(data as WorkerRow);
+  }
+
   async createWorker(body: unknown): Promise<Worker> {
     const parsed = createWorkerInputSchema.safeParse(body);
     if (!parsed.success) {

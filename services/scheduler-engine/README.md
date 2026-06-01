@@ -24,7 +24,7 @@ Publiczny kontrakt dla NestJS: **`/internal/v1/*`**.
 
 ### Pliki (podkład)
 
-`GET /internal/v1/files/podklad/template?year=2026&month=6` — generuje xlsx z szablonu (`assets/podklad_template.xlsx`), zachowując style i formuły.
+`GET /internal/v1/files/podklad/template?year=2026&month=6` — generuje xlsx z natywnego szablonu (28 / 30 / 31 dni w `assets/`), zachowując style i formuły. Luty przestępny (29 dni) bazuje na szablonie 30-dniowym z usuniętym ostatnim dniem.
 
 ## Wymagania
 
