@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
@@ -7,8 +5,10 @@ import { parsePodkladDraftContent } from '../files/podklad-draft.parser';
 import { WorkersService } from '../workers/workers.service';
 import { DraftImportService } from './draft-import.service';
 import { ReceivedSchedulesService } from './received-schedules.service';
-
-const SAMPLE_PODKLAD = '/Users/Maciej/Downloads/PODKŁAD 01.06-30.06 R (2).xlsx';
+import {
+  createSamplePodkladFixture,
+  SAMPLE_PODKLAD_FILE_NAME,
+} from '../../test/fixtures/sample-podklad';
 
 const workers = [
   {
@@ -33,11 +33,11 @@ const workers = [
 
 describe('parsePodkladDraftContent', () => {
   it('reads worker name and month from sample podklad', () => {
-    const buffer = readFileSync(SAMPLE_PODKLAD);
-    const parsed = parsePodkladDraftContent('PODKŁAD 01.06-30.06 R (2).xlsx', buffer);
+    const { buffer } = createSamplePodkladFixture();
+    const parsed = parsePodkladDraftContent(SAMPLE_PODKLAD_FILE_NAME, buffer);
 
     expect(parsed).toEqual({
-      fileName: 'PODKŁAD 01.06-30.06 R (2).xlsx',
+      fileName: SAMPLE_PODKLAD_FILE_NAME,
       firstName: 'Maciej',
       lastName: 'Kijowski',
       year: 2026,
@@ -82,12 +82,8 @@ describe('DraftImportService', () => {
   });
 
   it('matches podklad to worker without saving', async () => {
-    const buffer = readFileSync(SAMPLE_PODKLAD);
-    const result = await service.analyzeDraftFiles(
-      [{ buffer, originalname: 'PODKŁAD 01.06-30.06 R (2).xlsx' }],
-      2026,
-      6,
-    );
+    const { buffer, originalname } = createSamplePodkladFixture();
+    const result = await service.analyzeDraftFiles([{ buffer, originalname }], 2026, 6);
 
     expect(result.matched).toHaveLength(1);
     expect(result.matched[0]?.worker.id).toBe('1');
@@ -96,7 +92,7 @@ describe('DraftImportService', () => {
   });
 
   it('returns unmatched when name does not match any worker', async () => {
-    const buffer = readFileSync(SAMPLE_PODKLAD);
+    const { buffer, originalname } = createSamplePodkladFixture();
     const moduleRef = await Test.createTestingModule({
       providers: [
         DraftImportService,
@@ -119,38 +115,31 @@ describe('DraftImportService', () => {
     }).compile();
     const localService = moduleRef.get(DraftImportService);
 
-    const result = await localService.analyzeDraftFiles(
-      [{ buffer, originalname: 'PODKŁAD 01.06-30.06 R (2).xlsx' }],
-      2026,
-      6,
-    );
+    const result = await localService.analyzeDraftFiles([{ buffer, originalname }], 2026, 6);
 
     expect(result.matched).toHaveLength(0);
     expect(result.unmatched).toHaveLength(1);
   });
 
   it('confirms matched draft and marks received', async () => {
-    const buffer = readFileSync(SAMPLE_PODKLAD);
+    const { buffer, originalname } = createSamplePodkladFixture();
     getWorkerById.mockResolvedValue(workers[0]);
 
-    const result = await service.confirmDraftImports(
-      [{ buffer, originalname: 'PODKŁAD 01.06-30.06 R (2).xlsx' }],
-      {
-        year: 2026,
-        month: 6,
-        assignments: [{ clientId: '0', kind: 'existing', workerId: '1' }],
-      },
-    );
+    const result = await service.confirmDraftImports([{ buffer, originalname }], {
+      year: 2026,
+      month: 6,
+      assignments: [{ clientId: '0', kind: 'existing', workerId: '1' }],
+    });
 
     expect(result.saved).toBe(1);
     expect(saveWorkerDraft).toHaveBeenCalledWith('1', 2026, 6, {
       buffer,
-      originalname: 'PODKŁAD 01.06-30.06 R (2).xlsx',
+      originalname,
     });
   });
 
   it('creates worker when assignment kind is new', async () => {
-    const buffer = readFileSync(SAMPLE_PODKLAD);
+    const { buffer, originalname } = createSamplePodkladFixture();
     createWorker.mockResolvedValue({
       id: '3',
       firstName: 'Jan',
@@ -161,38 +150,35 @@ describe('DraftImportService', () => {
       deleted: false,
     });
 
-    await service.confirmDraftImports(
-      [{ buffer, originalname: 'PODKŁAD 01.06-30.06 R (2).xlsx' }],
-      {
-        year: 2026,
-        month: 6,
-        assignments: [
-          {
-            clientId: '0',
-            kind: 'new',
-            worker: {
-              firstName: 'Jan',
-              lastName: 'Nowy',
-              role: 'worker',
-              priority: 5,
-            },
+    await service.confirmDraftImports([{ buffer, originalname }], {
+      year: 2026,
+      month: 6,
+      assignments: [
+        {
+          clientId: '0',
+          kind: 'new',
+          worker: {
+            firstName: 'Jan',
+            lastName: 'Nowy',
+            role: 'worker',
+            priority: 5,
           },
-        ],
-      },
-    );
+        },
+      ],
+    });
 
     expect(createWorker).toHaveBeenCalled();
     expect(saveWorkerDraft).toHaveBeenCalledWith('3', 2026, 6, {
       buffer,
-      originalname: 'PODKŁAD 01.06-30.06 R (2).xlsx',
+      originalname,
     });
   });
 
   it('rejects month mismatch', async () => {
-    const buffer = readFileSync(SAMPLE_PODKLAD);
+    const { buffer } = createSamplePodkladFixture();
 
-    await expect(service.analyzeDraftFiles([{ buffer, originalname: 'podklad.xlsx' }], 2026, 5)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.analyzeDraftFiles([{ buffer, originalname: 'podklad.xlsx' }], 2026, 5),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
