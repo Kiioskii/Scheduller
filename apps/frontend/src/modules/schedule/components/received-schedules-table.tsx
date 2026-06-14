@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import {
   createColumnHelper,
   flexRender,
@@ -16,9 +16,10 @@ import {
   matchesReceivedScheduleFilters,
   type ReceivedScheduleTableFilters,
 } from '../lib/received-schedule-filters';
-import { useReceivedSchedules } from '../hooks/use-received-schedules';
+import { useReceivedDrafts } from '@/modules/drafts';
 import { ReceivedSchedulesTableFilters } from './received-schedules-table-filters';
 import { SubmitWorkerDraftButton } from './submit-worker-draft-button';
+import { WorkerDraftsListDialog } from './worker-drafts-list-dialog';
 
 const ROLE_LABELS: Record<WorkerPodkladStatus['role'], string> = {
   boss: 'Szef',
@@ -27,17 +28,21 @@ const ROLE_LABELS: Record<WorkerPodkladStatus['role'], string> = {
 
 const columnHelper = createColumnHelper<WorkerPodkladStatus>();
 
-function receivedStatusBadge(received: boolean): ReactNode {
+function receivedStatusBadge(received: boolean, draftCount: number): ReactNode {
+  const hasMultipleDrafts = draftCount > 1;
+
   return (
     <span
       className={cn(
         'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
-        received
-          ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-          : 'bg-amber-500/10 text-amber-800 dark:text-amber-300',
+        hasMultipleDrafts
+          ? 'bg-destructive/10 text-destructive'
+          : received
+            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+            : 'bg-amber-500/10 text-amber-800 dark:text-amber-300',
       )}
     >
-      {received ? 'Tak' : 'Nie'}
+      {hasMultipleDrafts ? `Tak (${draftCount})` : received ? 'Tak' : 'Nie'}
     </span>
   );
 }
@@ -47,10 +52,15 @@ type ReceivedSchedulesTableProps = {
 };
 
 export function ReceivedSchedulesTable({ month }: ReceivedSchedulesTableProps) {
-  const { data = [], isLoading, isError, error } = useReceivedSchedules(month);
+  const { data = [], isLoading, isError, error } = useReceivedDrafts(month);
   const [filters, setFilters] = useState<ReceivedScheduleTableFilters>(
     defaultReceivedScheduleTableFilters,
   );
+  const [draftListWorker, setDraftListWorker] = useState<WorkerPodkladStatus | null>(null);
+
+  const handleOpenDraftsList = useCallback((worker: WorkerPodkladStatus) => {
+    setDraftListWorker(worker);
+  }, []);
 
   const filteredData = useMemo(
     () => data.filter((row) => matchesReceivedScheduleFilters(row, filters)),
@@ -75,15 +85,24 @@ export function ReceivedSchedulesTable({ month }: ReceivedSchedulesTableProps) {
       }),
       columnHelper.accessor('received', {
         header: 'Czy przesłał podkład',
-        cell: (info) => receivedStatusBadge(info.getValue()),
+        cell: (info) => {
+          const row = info.row.original;
+          return receivedStatusBadge(row.received, row.draftCount);
+        },
       }),
       columnHelper.display({
         id: 'submit',
         header: '',
-        cell: (info) => <SubmitWorkerDraftButton worker={info.row.original} month={month} />,
+        cell: (info) => (
+          <SubmitWorkerDraftButton
+            worker={info.row.original}
+            month={month}
+            onOpenDraftsList={handleOpenDraftsList}
+          />
+        ),
       }),
     ],
-    [month],
+    [handleOpenDraftsList, month],
   );
 
   const table = useReactTable({
@@ -145,7 +164,12 @@ export function ReceivedSchedulesTable({ month }: ReceivedSchedulesTableProps) {
                   table.getRowModel().rows.map((row) => (
                     <tr
                       key={row.id}
-                      className={cn('border-t', row.original.deleted && 'bg-muted/30 opacity-70')}
+                      className={cn(
+                        'border-t',
+                        row.original.deleted && 'bg-muted/30 opacity-70',
+                        row.original.draftCount > 1 &&
+                          'bg-destructive/5 text-destructive [&_td:not(:nth-child(3))]:text-foreground',
+                      )}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <td key={cell.id} className="px-4 py-3">
@@ -159,6 +183,15 @@ export function ReceivedSchedulesTable({ month }: ReceivedSchedulesTableProps) {
             </table>
           </div>
         </>
+      )}
+
+      {draftListWorker && (
+        <WorkerDraftsListDialog
+          open
+          worker={draftListWorker}
+          month={month}
+          onClose={() => setDraftListWorker(null)}
+        />
       )}
     </section>
   );

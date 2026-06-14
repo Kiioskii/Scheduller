@@ -3,19 +3,19 @@ import { Download, Loader2, Upload } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
-  formatScheduleMonth,
-  getCurrentScheduleMonth,
-  ImportSchedulesForm,
+  ImportDraftsForm,
   ReceivedSchedulesTable,
   ScheduleMonthPicker,
-  useScheduleMutations,
+  formatScheduleMonth,
+  getCurrentScheduleMonth,
   type ScheduleMonth,
 } from '@/modules/schedule';
+import { useDraftMutations } from '@/modules/drafts';
 
 export function DashboardDraftsPage() {
   const [selectedMonth, setSelectedMonth] = useState<ScheduleMonth>(getCurrentScheduleMonth);
   const [showImportForm, setShowImportForm] = useState(false);
-  const { downloadPodklad } = useScheduleMutations();
+  const { downloadPodklad } = useDraftMutations();
 
   return (
     <div className="space-y-4">
@@ -63,10 +63,7 @@ export function DashboardDraftsPage() {
       <ScheduleMonthPicker value={selectedMonth} onChange={setSelectedMonth} />
 
       {showImportForm && (
-        <ImportSchedulesForm
-          defaultMonth={selectedMonth}
-          onClose={() => setShowImportForm(false)}
-        />
+        <ImportDraftsForm defaultMonth={selectedMonth} onClose={() => setShowImportForm(false)} />
       )}
 
       <h3 className="text-base font-semibold tracking-tight">

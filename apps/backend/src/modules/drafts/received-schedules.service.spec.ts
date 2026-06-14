@@ -1,10 +1,11 @@
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { readFileSync } from 'node:fs';
 import { Test, TestingModule } from '@nestjs/testing';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { FilesService } from '../files/files.service';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { WorkersService } from '../workers/workers.service';
+import { DraftStorageService } from './draft-storage.service';
 import { ReceivedSchedulesService } from './received-schedules.service';
 
 const workers = [
@@ -28,14 +29,12 @@ const workers = [
   },
 ];
 
-function createSupabaseClientMock(
-  receivedResult: { data: unknown[]; error: { message: string } | null },
-): SupabaseClient {
+function createStatusesSupabaseMock(receivedRows: unknown[]): SupabaseClient {
   return {
     from: jest.fn(() => ({
       select: jest.fn(() => ({
         eq: jest.fn(() => ({
-          eq: jest.fn().mockResolvedValue(receivedResult),
+          eq: jest.fn().mockResolvedValue({ data: receivedRows, error: null }),
         })),
       })),
     })),
@@ -43,32 +42,12 @@ function createSupabaseClientMock(
 }
 
 function createSubmitSupabaseMock(options: {
-  existing?: boolean;
   insertError?: { message: string } | null;
-  updateError?: { message: string } | null;
 }): SupabaseClient {
-  const maybeSingle = jest.fn().mockResolvedValue({
-    data: options.existing ? { worker_id: 1 } : null,
-    error: null,
-  });
-  const updateEqMonth = jest.fn().mockResolvedValue({ error: options.updateError ?? null });
-  const updateEqYear = jest.fn(() => ({ eq: updateEqMonth }));
-  const updateEqWorker = jest.fn(() => ({ eq: updateEqYear }));
-  const update = jest.fn(() => ({ eq: updateEqWorker }));
   const insert = jest.fn().mockResolvedValue({ error: options.insertError ?? null });
 
   return {
     from: jest.fn(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          eq: jest.fn(() => ({
-            eq: jest.fn(() => ({
-              maybeSingle,
-            })),
-          })),
-        })),
-      })),
-      update,
       insert,
     })),
   } as unknown as SupabaseClient;
@@ -78,10 +57,15 @@ describe('ReceivedSchedulesService', () => {
   let service: ReceivedSchedulesService;
   let getClient: jest.Mock<SupabaseClient>;
   let getWorkerById: jest.Mock;
+  let uploadWorkerDraft: jest.Mock;
 
   beforeEach(async () => {
     getClient = jest.fn();
     getWorkerById = jest.fn();
+    uploadWorkerDraft = jest.fn().mockResolvedValue({
+      storagePath: '1/2026/6/draft-1.xlsx',
+      fileName: 'podklad.xlsx',
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -98,17 +82,8 @@ describe('ReceivedSchedulesService', () => {
           },
         },
         {
-          provide: FilesService,
-          useValue: {
-            parseScheduleExcelFile: jest.fn().mockReturnValue({
-              fileName: 'podklad.xlsx',
-              sheetName: 'Sheet1',
-              sheetNames: ['Sheet1'],
-              rowCount: 10,
-              year: 2026,
-              month: 6,
-            }),
-          },
+          provide: DraftStorageService,
+          useValue: { uploadWorkerDraft },
         },
       ],
     }).compile();
@@ -116,12 +91,12 @@ describe('ReceivedSchedulesService', () => {
     service = module.get(ReceivedSchedulesService);
   });
 
-  it('merges workers with received flags for the selected month', async () => {
+  it('merges workers with draft counts from Received_drafts rows', async () => {
     getClient.mockReturnValue(
-      createSupabaseClientMock({
-        data: [{ worker_id: 1, year: 2026, month: 6, recived: 1 }],
-        error: null,
-      }),
+      createStatusesSupabaseMock([
+        { worker_id: 1, year: 2026, month: 6, recived: true },
+        { worker_id: 1, year: 2026, month: 6, recived: true },
+      ]),
     );
 
     const statuses = await service.getWorkerPodkladStatuses(2026, 6);
@@ -132,24 +107,51 @@ describe('ReceivedSchedulesService', () => {
         firstName: 'Jan',
         lastName: 'Kowalski',
         received: true,
+        draftCount: 2,
       }),
       expect.objectContaining({
         workerId: '2',
         firstName: 'Anna',
         lastName: 'Nowak',
         received: false,
+        draftCount: 0,
         deleted: true,
       }),
     ]);
   });
 
-  it('throws when Supabase query fails', async () => {
+  it('ignores rows with recived=false when counting drafts', async () => {
     getClient.mockReturnValue(
-      createSupabaseClientMock({
-        data: [],
-        error: { message: 'connection failed' },
+      createStatusesSupabaseMock([
+        { worker_id: 1, year: 2026, month: 6, recived: true },
+        { worker_id: 1, year: 2026, month: 6, recived: false },
+      ]),
+    );
+
+    const statuses = await service.getWorkerPodkladStatuses(2026, 6);
+
+    expect(statuses[0]).toEqual(
+      expect.objectContaining({
+        workerId: '1',
+        received: true,
+        draftCount: 1,
       }),
     );
+  });
+
+  it('throws when Supabase query fails', async () => {
+    getClient.mockReturnValue({
+      from: jest.fn(() => ({
+        select: jest.fn(() => ({
+          eq: jest.fn(() => ({
+            eq: jest.fn().mockResolvedValue({
+              data: [],
+              error: { message: 'connection failed' },
+            }),
+          })),
+        })),
+      })),
+    } as unknown as SupabaseClient);
 
     await expect(service.getWorkerPodkladStatuses(2026, 6)).rejects.toBeInstanceOf(
       InternalServerErrorException,
@@ -157,11 +159,14 @@ describe('ReceivedSchedulesService', () => {
   });
 
   describe('submitWorkerDraft', () => {
-    const file = { buffer: Buffer.from('xlsx'), originalname: 'podklad.xlsx' };
+    const file = {
+      buffer: readFileSync('/Users/Maciej/Downloads/PODKŁAD 01.06-30.06 R (2).xlsx'),
+      originalname: 'PODKŁAD 01.06-30.06 R (2).xlsx',
+    };
 
-    it('inserts received draft for active worker', async () => {
+    it('inserts received draft row for active worker', async () => {
       getWorkerById.mockResolvedValue(workers[0]);
-      getClient.mockReturnValue(createSubmitSupabaseMock({ existing: false }));
+      getClient.mockReturnValue(createSubmitSupabaseMock({}));
 
       const result = await service.submitWorkerDraft('1', 2026, 6, file);
 
@@ -171,6 +176,7 @@ describe('ReceivedSchedulesService', () => {
         month: 6,
         received: true,
       });
+      expect(uploadWorkerDraft).toHaveBeenCalledWith('1', 2026, 6, file);
     });
 
     it('rejects deleted worker', async () => {

@@ -2,25 +2,19 @@ import {
   importedScheduleFileSchema,
   saveImportedSchedulesInputSchema,
   scheduleEntrySchema,
-  submitWorkerDraftResultSchema,
-  workerPodkladStatusSchema,
   type ImportedScheduleFile,
-  type SubmitWorkerDraftResult,
-  type WorkerPodkladStatus,
 } from '@scheduler/shared';
 import { z } from 'zod';
 
 import { apiFetch } from '@/lib/http';
 
 export type ScheduleEntry = z.infer<typeof scheduleEntrySchema>;
-export type { ImportedScheduleFile, SubmitWorkerDraftResult, WorkerPodkladStatus };
+export type { ImportedScheduleFile };
 
 export const scheduleKeys = {
   all: ['schedule'] as const,
   list: () => [...scheduleKeys.all, 'list'] as const,
   imported: () => [...scheduleKeys.all, 'imported'] as const,
-  received: (year: number, month: number) =>
-    [...scheduleKeys.all, 'received', year, month] as const,
 };
 
 const SCHEDULES_PATH = '/api/schedules';
@@ -47,40 +41,6 @@ async function handleResponse(res: Response): Promise<unknown> {
     throw new Error(apiErrorMessage(json, res.status));
   }
   return json;
-}
-
-/** Tymczasowe dane demo — zamień na fetch z API / Supabase */
-export async function submitWorkerDraft(params: {
-  workerId: string;
-  year: number;
-  month: number;
-  file: File;
-}): Promise<SubmitWorkerDraftResult> {
-  const formData = new FormData();
-  formData.append('file', params.file);
-  formData.append('workerId', params.workerId);
-  formData.append('year', String(params.year));
-  formData.append('month', String(params.month));
-
-  const res = await apiFetch(`${SCHEDULES_PATH}/drafts/submit`, {
-    method: 'POST',
-    body: formData,
-  });
-  const json = await handleResponse(res);
-  return submitWorkerDraftResultSchema.parse(json);
-}
-
-export async function fetchReceivedSchedules(
-  year: number,
-  month: number,
-): Promise<WorkerPodkladStatus[]> {
-  const params = new URLSearchParams({
-    year: String(year),
-    month: String(month),
-  });
-  const res = await apiFetch(`${SCHEDULES_PATH}/received?${params.toString()}`);
-  const json = await handleResponse(res);
-  return workerPodkladStatusSchema.array().parse(json);
 }
 
 /** Tymczasowe dane demo — zamień na fetch z API / Supabase */

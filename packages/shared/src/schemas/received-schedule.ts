@@ -9,6 +9,7 @@ export const workerPodkladStatusSchema = z.object({
   role: workerRoleSchema,
   deleted: z.boolean(),
   received: z.boolean(),
+  draftCount: z.number().int().nonnegative(),
 });
 
 export type WorkerPodkladStatus = z.infer<typeof workerPodkladStatusSchema>;
