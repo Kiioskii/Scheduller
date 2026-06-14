@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @scheduler/shared build
+
+      - name: Backend tests
+        run: pnpm --filter @scheduler/backend test
+
+      - name: Frontend tests
+        run: pnpm --filter @scheduler/frontend test
+
+  docker:
+    name: Docker Compose
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build images
+        run: docker compose build
+
+      - name: Start stack
+        run: docker compose up -d
+
+      - name: Wait for backend health
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000/api/health > /dev/null; then
+              echo "Backend is healthy"
+              exit 0
+            fi
+            echo "Waiting for backend... ($i/60)"
+            sleep 5
+          done
+          echo "Backend did not become healthy in time"
+          docker compose ps
+          docker compose logs backend scheduler-engine redis
+          exit 1
+
+      - name: Check frontend
+        run: curl -sf http://localhost:8080/ > /dev/null
+
+      - name: Check scheduler-engine health
+        run: |
+          docker compose exec -T scheduler-engine \
+            python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/internal/v1/health/live')"
+
+      - name: Stop stack
+        if: always()
+        run: docker compose down -v

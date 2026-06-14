@@ -1,5 +1,4 @@
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
-import { readFileSync } from 'node:fs';
 import { Test, TestingModule } from '@nestjs/testing';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -7,6 +6,7 @@ import { SupabaseService } from '../../supabase/supabase.service';
 import { WorkersService } from '../workers/workers.service';
 import { DraftStorageService } from './draft-storage.service';
 import { ReceivedSchedulesService } from './received-schedules.service';
+import { createSamplePodkladFixture } from '../../test/fixtures/sample-podklad';
 
 const workers = [
   {
@@ -159,10 +159,7 @@ describe('ReceivedSchedulesService', () => {
   });
 
   describe('submitWorkerDraft', () => {
-    const file = {
-      buffer: readFileSync('/Users/Maciej/Downloads/PODKŁAD 01.06-30.06 R (2).xlsx'),
-      originalname: 'PODKŁAD 01.06-30.06 R (2).xlsx',
-    };
+    const file = createSamplePodkladFixture();
 
     it('inserts received draft row for active worker', async () => {
       getWorkerById.mockResolvedValue(workers[0]);
