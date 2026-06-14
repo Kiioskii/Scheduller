@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppGateway } from './app.gateway';
 import { RedisModule } from './redis/redis.module';
 import { SupabaseModule } from './supabase/supabase.module';
+import { DraftsModule } from './modules/drafts/drafts.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
 import { SchedulerEngineModule } from './scheduler-engine/scheduler-engine.module';
 import { WorkersModule } from './modules/workers/workers.module';
@@ -19,6 +20,7 @@ import { WorkersModule } from './modules/workers/workers.module';
     SupabaseModule,
     WorkersModule,
     SchedulesModule,
+    DraftsModule,
   ],
   controllers: [AppController],
   providers: [AppGateway],
