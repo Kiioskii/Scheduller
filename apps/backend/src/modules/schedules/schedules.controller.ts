@@ -10,15 +10,31 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiOkResponse,
+  ApiOperation,
+  ApiProduces,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { Response } from 'express';
 
 import { SchedulesService } from './schedules.service';
+import { SaveImportedSchedulesResultDto } from '../../swagger/dto/schedule.dto';
 
+@ApiTags('schedules')
 @Controller('schedules')
 export class SchedulesController {
   constructor(private readonly schedulesService: SchedulesService) {}
 
   @Get('template')
+  @ApiOperation({ summary: 'Pobranie szablonu podkładu grafiku' })
+  @ApiQuery({ name: 'year', type: Number, example: 2026 })
+  @ApiQuery({ name: 'month', type: Number, example: 6 })
+  @ApiProduces('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  @ApiOkResponse({ description: 'Plik Excel (.xlsx) ze szablonem podkładu' })
   async downloadTemplate(
     @Query('year') yearParam: string,
     @Query('month') monthParam: string,
@@ -42,6 +58,35 @@ export class SchedulesController {
   }
 
   @Post('import/parse')
+  @ApiOperation({ summary: 'Analiza plików grafików Excel (bez zapisu)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['files'],
+      properties: {
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: 'Pliki .xlsx lub .xls',
+        },
+      },
+    },
+  })
+  @ApiOkResponse({
+    description: 'Sparsowane metadane plików grafików',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          fileName: { type: 'string', example: 'grafik-czerwiec.xlsx' },
+          year: { type: 'number', example: 2026 },
+          month: { type: 'number', example: 6 },
+        },
+      },
+    },
+  })
   @UseInterceptors(FilesInterceptor('files', 20))
   parseImport(@UploadedFiles() files?: Array<{ buffer: Buffer; originalname: string }>) {
     const uploads = (files ?? []).filter((file) => file.buffer?.length);
@@ -52,6 +97,27 @@ export class SchedulesController {
   }
 
   @Post('import')
+  @ApiOperation({ summary: 'Zapis zaimportowanych grafików' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['files'],
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              fileName: { type: 'string' },
+              year: { type: 'number' },
+              month: { type: 'number' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiOkResponse({ type: SaveImportedSchedulesResultDto })
   saveImport(@Body() body: unknown) {
     return this.schedulesService.saveImportedSchedules(body);
   }

@@ -18,7 +18,12 @@ services:
       target: dev
     volumes:
       - ./apps/backend/src:/app/apps/backend/src
+      - ./apps/backend/package.json:/app/apps/backend/package.json
       - ./packages/shared/src:/app/packages/shared/src
+      - ./packages/shared/package.json:/app/packages/shared/package.json
+      - ./package.json:/app/package.json
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml
     environment:
       NODE_ENV: development
       CORS_ORIGIN: http://localhost:5173
@@ -30,7 +35,7 @@ services:
         condition: service_healthy
       scheduler-engine:
         condition: service_started
-    command: sh -c "pnpm --filter @scheduler/shared dev & pnpm --filter @scheduler/backend dev"
+    command: sh -c "pnpm install --frozen-lockfile && pnpm --filter @scheduler/shared dev & pnpm --filter @scheduler/backend dev"
 
   frontend:
     build:

@@ -17,6 +17,7 @@
     "@nestjs/core": "^11.1.2",
     "@nestjs/platform-express": "^11.1.2",
     "@nestjs/platform-socket.io": "^11.1.2",
+    "@nestjs/swagger": "^11.4.4",
     "@nestjs/websockets": "^11.1.2",
     "@scheduler/shared": "workspace:*",
     "@supabase/supabase-js": "^2.49.8",
