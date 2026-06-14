@@ -1,0 +1,112 @@
+import { useMemo } from 'react';
+import {
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+
+import { cn } from '@/lib/utils';
+
+import type { GeneratedSchedule } from '../lib/generated-schedule';
+import { formatScheduleMonth } from '../lib/schedule-month';
+
+const STATUS_LABELS: Record<GeneratedSchedule['status'], string> = {
+  generated: 'Wygenerowany',
+  draft: 'Szkic',
+};
+
+const columnHelper = createColumnHelper<GeneratedSchedule>();
+
+type GeneratedSchedulesTableProps = {
+  schedules: GeneratedSchedule[];
+};
+
+export function GeneratedSchedulesTable({ schedules }: GeneratedSchedulesTableProps) {
+  const columns = useMemo(
+    () => [
+      columnHelper.display({
+        id: 'period',
+        header: 'Miesiąc',
+        cell: (info) => formatScheduleMonth(info.row.original),
+      }),
+      columnHelper.accessor('createdAt', {
+        header: 'Wygenerowano',
+        cell: (info) => new Date(info.getValue()).toLocaleString('pl-PL'),
+      }),
+      columnHelper.accessor('status', {
+        header: 'Status',
+        cell: (info) => {
+          const status = info.getValue();
+          return (
+            <span
+              className={cn(
+                'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
+                status === 'generated'
+                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                  : 'bg-muted text-muted-foreground',
+              )}
+            >
+              {STATUS_LABELS[status]}
+            </span>
+          );
+        },
+      }),
+    ],
+    [],
+  );
+
+  const table = useReactTable({
+    data: schedules,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
+  return (
+    <section className="space-y-4">
+      <div>
+        <h3 className="text-base font-semibold tracking-tight">Lista grafików</h3>
+        <p className="text-sm text-muted-foreground">
+          Grafiki zapisane lokalnie w przeglądarce (mock frontendu).
+        </p>
+      </div>
+
+      <div className="overflow-x-auto rounded-md border">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/50">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th key={header.id} className="px-4 py-3 text-left font-medium">
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} className="px-4 py-8 text-center text-muted-foreground">
+                  Brak wygenerowanych grafików.
+                </td>
+              </tr>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <tr key={row.id} className="border-t">
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="px-4 py-3">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
