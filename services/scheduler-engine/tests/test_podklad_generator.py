@@ -79,3 +79,25 @@ def test_january_has_31_days() -> None:
     assert ws.cell(3, name_col).value == "nazwisko"
     assert ws.cell(1, name_col).value == "=A1"
     assert len(ws.merged_cells.ranges) >= 38
+
+
+def _has_black_fill(cell) -> bool:
+    fill = cell.fill
+    rgb = getattr(fill.fgColor, "rgb", "") or ""
+    rgb_value = str(rgb)
+    return fill.patternType == "solid" and rgb_value.endswith("000000")
+
+
+def test_holiday_days_are_marked_in_row_4() -> None:
+    content = generate_podklad_bytes(2026, 6, ["2026-06-01", "2026-06-15"])
+    ws = load_workbook(BytesIO(content)).active
+
+    holiday_col = day_weekday_col(1)
+    regular_col = day_weekday_col(2)
+
+    for col in (holiday_col, holiday_col + 1):
+        assert _has_black_fill(ws.cell(4, col))
+
+    assert not _has_black_fill(ws.cell(4, regular_col))
+    assert not _has_black_fill(ws.cell(5, holiday_col))
+    assert not _has_black_fill(ws.cell(10, holiday_col))

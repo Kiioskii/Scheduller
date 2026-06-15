@@ -18,7 +18,11 @@ export class SchedulerEngineService {
 
   constructor(private readonly config: ConfigService) {}
 
-  async fetchPodkladTemplate(year: number, month: number): Promise<PodkladTemplateResult> {
+  async fetchPodkladTemplate(
+    year: number,
+    month: number,
+    holidayDates: string[] = [],
+  ): Promise<PodkladTemplateResult> {
     const baseUrl = this.config.get<string>('SCHEDULER_ENGINE_URL')?.replace(/\/$/, '');
     if (!baseUrl) {
       throw new ServiceUnavailableException('Scheduler engine URL is not configured');
@@ -27,6 +31,9 @@ export class SchedulerEngineService {
     const url = new URL('/internal/v1/files/podklad/template', baseUrl);
     url.searchParams.set('year', String(year));
     url.searchParams.set('month', String(month));
+    if (holidayDates.length > 0) {
+      url.searchParams.set('holiday_dates', holidayDates.join(','));
+    }
 
     const headers: Record<string, string> = {
       Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

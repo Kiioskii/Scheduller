@@ -8,6 +8,7 @@ from datetime import date
 from importlib.resources import files
 
 from openpyxl import load_workbook
+from openpyxl.styles import PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -36,6 +37,9 @@ TEMPLATE_BY_DAYS: dict[int, str] = {
 }
 
 SHIFT_VALUE_MERGE_ROWS = (10, 12, 14, 16, 18)
+
+HOLIDAY_FILL_ROW = 4
+HOLIDAY_FILL = PatternFill(patternType="solid", fgColor="000000")
 
 
 def get_days_in_month(year: int, month: int) -> int:
@@ -131,7 +135,36 @@ def _fill_calendar(ws: Worksheet, year: int, month: int, days_in_month: int) -> 
     ws.cell(3, name_col + 1).value = "imię"
 
 
-def generate_podklad_workbook(year: int, month: int):
+def _iso_date(year: int, month: int, day: int) -> str:
+    return f"{year}-{month:02d}-{day:02d}"
+
+
+def _parse_holiday_dates(holiday_dates: list[str] | None) -> frozenset[str]:
+    if not holiday_dates:
+        return frozenset()
+    return frozenset(date.strip() for date in holiday_dates if date and date.strip())
+
+
+def _apply_holidays(
+    ws: Worksheet,
+    year: int,
+    month: int,
+    days_in_month: int,
+    holiday_dates: frozenset[str],
+) -> None:
+    if not holiday_dates:
+        return
+
+    for day in range(1, days_in_month + 1):
+        if _iso_date(year, month, day) not in holiday_dates:
+            continue
+
+        col = day_weekday_col(day)
+        for column in (col, col + 1):
+            ws.cell(HOLIDAY_FILL_ROW, column).fill = HOLIDAY_FILL
+
+
+def generate_podklad_workbook(year: int, month: int, holiday_dates: list[str] | None = None):
     if month < 1 or month > 12:
         raise ValueError("month must be 1–12")
     if year < 2000 or year > 2100:
@@ -147,11 +180,12 @@ def generate_podklad_workbook(year: int, month: int):
         _adapt_29_day_layout(worksheet)
 
     _fill_calendar(worksheet, year, month, days_in_month)
+    _apply_holidays(worksheet, year, month, days_in_month, _parse_holiday_dates(holiday_dates))
     return workbook
 
 
-def generate_podklad_bytes(year: int, month: int) -> bytes:
-    workbook = generate_podklad_workbook(year, month)
+def generate_podklad_bytes(year: int, month: int, holiday_dates: list[str] | None = None) -> bytes:
+    workbook = generate_podklad_workbook(year, month, holiday_dates)
     buffer = io.BytesIO()
     workbook.save(buffer)
     return buffer.getvalue()
