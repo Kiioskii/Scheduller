@@ -29,14 +29,29 @@ def _content_disposition(file_name: str) -> str:
     return f"attachment; filename=\"{ascii_fallback}\"; filename*=UTF-8''{quote(file_name)}"
 
 
+def _parse_holiday_dates_param(holiday_dates: str | None) -> list[str] | None:
+    if not holiday_dates:
+        return None
+    dates = [part.strip() for part in holiday_dates.split(",") if part.strip()]
+    return dates or None
+
+
 @router.get("/podklad/template")
 def download_podklad_template(
     _settings: SettingsDep,
     year: int = Query(ge=2000, le=2100),
     month: int = Query(ge=1, le=12),
+    holiday_dates: str | None = Query(
+        default=None,
+        description="Comma-separated ISO dates (YYYY-MM-DD) to mark as holidays",
+    ),
 ) -> Response:
-    query = PodkladTemplateQuery(year=year, month=month)
-    content = generate_podklad_bytes(query.year, query.month)
+    query = PodkladTemplateQuery(
+        year=year,
+        month=month,
+        holiday_dates=_parse_holiday_dates_param(holiday_dates),
+    )
+    content = generate_podklad_bytes(query.year, query.month, query.holiday_dates)
     file_name = format_podklad_file_name(query.year, query.month)
 
     return Response(
