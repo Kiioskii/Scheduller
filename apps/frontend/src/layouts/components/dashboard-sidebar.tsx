@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarRange, Home, LogOut, Settings, Users } from 'lucide-react';
+import { CalendarDays, CalendarRange, Home, LogOut, Settings, Star, Users } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ const navItems = [
   { to: '/dashboard/drafts', label: 'Podkłady', icon: CalendarDays, end: false },
   { to: '/dashboard/schedules', label: 'Grafiki', icon: CalendarRange, end: false },
   { to: '/dashboard/workers', label: 'Pracownicy', icon: Users, end: false },
+  { to: '/dashboard/holidays', label: 'Święta', icon: Star, end: false },
   { to: '/dashboard/settings', label: 'Ustawienia', icon: Settings, end: false },
 ];
 
