@@ -4,5 +4,6 @@ export * from './schemas/received-schedule';
 export * from './schemas/schedule';
 export * from './schemas/schedule-import';
 export * from './schemas/submit-draft';
+export * from './schemas/holiday';
 export * from './schemas/worker';
 export * from './schemas/worker-draft-file';
