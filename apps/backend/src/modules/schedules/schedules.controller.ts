@@ -23,11 +23,26 @@ import type { Response } from 'express';
 
 import { SchedulesService } from './schedules.service';
 import { SaveImportedSchedulesResultDto } from '../../swagger/dto/schedule.dto';
+import { DraftSubmissionSummaryDto } from '../../swagger/dto/draft-submission-summary.dto';
 
 @ApiTags('schedules')
 @Controller('schedules')
 export class SchedulesController {
   constructor(private readonly schedulesService: SchedulesService) {}
+
+  @Get('draft-submissions/summary')
+  @ApiOperation({ summary: 'Podsumowanie przesłanych podkładów za wybrany miesiąc' })
+  @ApiQuery({ name: 'year', type: Number, example: 2026 })
+  @ApiQuery({ name: 'month', type: Number, example: 6 })
+  @ApiOkResponse({ type: DraftSubmissionSummaryDto })
+  getDraftSubmissionSummary(
+    @Query('year') yearParam: string,
+    @Query('month') monthParam: string,
+  ) {
+    const year = Number(yearParam);
+    const month = Number(monthParam);
+    return this.schedulesService.getDraftSubmissionSummary(year, month);
+  }
 
   @Get('template')
   @ApiOperation({ summary: 'Pobranie szablonu podkładu grafiku' })

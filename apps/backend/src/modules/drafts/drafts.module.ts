@@ -10,5 +10,6 @@ import { ReceivedSchedulesService } from './received-schedules.service';
   imports: [WorkersModule],
   providers: [ReceivedSchedulesService, DraftStorageService, DraftImportService],
   controllers: [DraftsController],
+  exports: [ReceivedSchedulesService],
 })
 export class DraftsModule {}

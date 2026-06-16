@@ -9,6 +9,7 @@ import { DashboardDraftsPage } from '@/pages/dashboard/drafts-page';
 import { DashboardOverviewPage } from '@/pages/dashboard/overview-page';
 import { DashboardSchedulesPage } from '@/pages/dashboard/schedules-page';
 import { DashboardHolidaysPage } from '@/pages/dashboard/holidays-page';
+import { DashboardShiftsPage } from '@/pages/dashboard/shifts-page';
 import { DashboardSettingsPage } from '@/pages/dashboard/settings-page';
 import { DashboardWorkersPage } from '@/pages/dashboard/workers-page';
 import { LandingPage } from '@/pages/landing-page';
@@ -31,6 +32,7 @@ export function AppRouter() {
             <Route path="schedules" element={<DashboardSchedulesPage />} />
             <Route path="workers" element={<DashboardWorkersPage />} />
             <Route path="holidays" element={<DashboardHolidaysPage />} />
+            <Route path="shifts" element={<DashboardShiftsPage />} />
             <Route path="settings" element={<DashboardSettingsPage />} />
           </Route>
         </Route>

@@ -67,6 +67,28 @@ export class ReceivedSchedulesService {
     return workerRows.map((worker) => workerPodkladStatus(worker, draftCountByWorkerId));
   }
 
+  async getDraftSubmissionSummary(
+    year: number,
+    month: number,
+  ): Promise<{
+    year: number;
+    month: number;
+    activeWorkers: number;
+    submittedCount: number;
+  }> {
+    const { year: normalizedYear, month: normalizedMonth } = this.normalizeYearMonth(year, month);
+    const statuses = await this.getWorkerPodkladStatuses(normalizedYear, normalizedMonth);
+    const activeWorkers = statuses.filter((worker) => !worker.deleted);
+    const submittedCount = activeWorkers.filter((worker) => worker.received).length;
+
+    return {
+      year: normalizedYear,
+      month: normalizedMonth,
+      activeWorkers: activeWorkers.length,
+      submittedCount,
+    };
+  }
+
   async listWorkerDraftFiles(
     workerId: string,
     year: number,

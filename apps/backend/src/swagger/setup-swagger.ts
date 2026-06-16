@@ -9,6 +9,7 @@ export function setupSwagger(app: INestApplication): void {
     .addTag('health', 'Status aplikacji')
     .addTag('workers', 'Zarządzanie pracownikami')
     .addTag('holidays', 'Zarządzanie świętami')
+    .addTag('shifts', 'Szablony zmian')
     .addTag('drafts', 'Podkłady grafików od pracowników')
     .addTag('schedules', 'Szablony podkładów i import grafików')
     .build();

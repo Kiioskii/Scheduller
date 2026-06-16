@@ -1,12 +1,18 @@
 export {
   downloadSchedulePodklad,
+  fetchDraftSubmissionSummary,
   fetchScheduleEntries,
   parseSchedulesImport,
   saveSchedulesImport,
   scheduleKeys,
 } from './api/schedule.api';
-export type { ImportedScheduleFile, ScheduleEntry } from './api/schedule.api';
+export type {
+  ImportedScheduleFile,
+  ScheduleEntry,
+  DraftSubmissionSummary as DraftSubmissionSummaryData,
+} from './api/schedule.api';
 export { useSchedule, useScheduleMutations } from './hooks/use-schedule';
+export { useDraftSubmissionSummary } from './hooks/use-draft-submission-summary';
 export { useGeneratedSchedules } from './hooks/use-generated-schedules';
 export { DraftSubmissionSummary } from './components/draft-submission-summary';
 export { GeneratedSchedulesTable } from './components/generated-schedules-table';
