@@ -9,6 +9,7 @@ import { SchedulesModule } from './modules/schedules/schedules.module';
 import { SchedulerEngineModule } from './scheduler-engine/scheduler-engine.module';
 import { WorkersModule } from './modules/workers/workers.module';
 import { HolidaysModule } from './modules/holidays/holidays.module';
+import { ShiftsModule } from './modules/shifts/shifts.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { HolidaysModule } from './modules/holidays/holidays.module';
     SupabaseModule,
     WorkersModule,
     HolidaysModule,
+    ShiftsModule,
     SchedulesModule,
     DraftsModule,
   ],

@@ -1,10 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import {
+  draftSubmissionSummarySchema,
   importedScheduleFileSchema,
   saveImportedSchedulesInputSchema,
+  type DraftSubmissionSummary,
   type ImportedScheduleFile,
 } from '@scheduler/shared';
 
+import { ReceivedSchedulesService } from '../drafts/received-schedules.service';
 import { SchedulerEngineService } from '../../scheduler-engine/scheduler-engine.service';
 import { FilesService, type UploadFilePayload } from '../files/files.service';
 import { HolidaysService } from '../holidays/holidays.service';
@@ -15,7 +18,17 @@ export class SchedulesService {
     private readonly filesService: FilesService,
     private readonly schedulerEngine: SchedulerEngineService,
     private readonly holidaysService: HolidaysService,
+    private readonly receivedSchedulesService: ReceivedSchedulesService,
   ) {}
+
+  async getDraftSubmissionSummary(year: number, month: number): Promise<DraftSubmissionSummary> {
+    const normalized = this.normalizeYearMonth(year, month);
+    const summary = await this.receivedSchedulesService.getDraftSubmissionSummary(
+      normalized.year,
+      normalized.month,
+    );
+    return draftSubmissionSummarySchema.parse(summary);
+  }
 
   async generatePodkladTemplate(
     year: number,

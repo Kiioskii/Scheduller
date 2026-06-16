@@ -1,31 +1,20 @@
-import { useMemo } from 'react';
-
 import { cn } from '@/lib/utils';
-import { useReceivedDrafts } from '@/modules/drafts';
 
 import type { ScheduleMonth } from '../lib/schedule-month';
 import { formatScheduleMonth } from '../lib/schedule-month';
+import { useDraftSubmissionSummary } from '../hooks/use-draft-submission-summary';
 
 type DraftSubmissionSummaryProps = {
   month: ScheduleMonth;
 };
 
 export function DraftSubmissionSummary({ month }: DraftSubmissionSummaryProps) {
-  const { data = [], isLoading, isError, error } = useReceivedDrafts(month);
+  const { data, isLoading, isError, error } = useDraftSubmissionSummary(month);
 
-  const stats = useMemo(() => {
-    const activeWorkers = data.filter((worker) => !worker.deleted);
-    const submittedCount = activeWorkers.filter((worker) => worker.received).length;
-
-    return {
-      activeWorkers: activeWorkers.length,
-      submittedCount,
-    };
-  }, [data]);
-
-  const allSubmitted =
-    stats.activeWorkers > 0 && stats.submittedCount === stats.activeWorkers;
-  const noneSubmitted = stats.submittedCount === 0;
+  const activeWorkers = data?.activeWorkers ?? 0;
+  const submittedCount = data?.submittedCount ?? 0;
+  const allSubmitted = activeWorkers > 0 && submittedCount === activeWorkers;
+  const noneSubmitted = submittedCount === 0;
 
   return (
     <section className="rounded-lg border bg-muted/20 p-4">
@@ -40,12 +29,12 @@ export function DraftSubmissionSummary({ month }: DraftSubmissionSummaryProps) {
         </p>
       )}
 
-      {!isLoading && !isError && (
+      {!isLoading && !isError && data && (
         <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <p className="text-2xl font-semibold tracking-tight">
-            {stats.submittedCount}{' '}
+            {submittedCount}{' '}
             <span className="text-base font-normal text-muted-foreground">
-              z {stats.activeWorkers} pracowników
+              z {activeWorkers} pracowników
             </span>
           </p>
           <span

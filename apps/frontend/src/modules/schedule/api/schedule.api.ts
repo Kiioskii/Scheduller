@@ -1,7 +1,9 @@
 import {
+  draftSubmissionSummarySchema,
   importedScheduleFileSchema,
   saveImportedSchedulesInputSchema,
   scheduleEntrySchema,
+  type DraftSubmissionSummary,
   type ImportedScheduleFile,
 } from '@scheduler/shared';
 import { z } from 'zod';
@@ -9,12 +11,14 @@ import { z } from 'zod';
 import { apiFetch } from '@/lib/http';
 
 export type ScheduleEntry = z.infer<typeof scheduleEntrySchema>;
-export type { ImportedScheduleFile };
+export type { ImportedScheduleFile, DraftSubmissionSummary };
 
 export const scheduleKeys = {
   all: ['schedule'] as const,
   list: () => [...scheduleKeys.all, 'list'] as const,
   imported: () => [...scheduleKeys.all, 'imported'] as const,
+  draftSubmissionSummary: (year: number, month: number) =>
+    [...scheduleKeys.all, 'draft-submissions', 'summary', year, month] as const,
 };
 
 const SCHEDULES_PATH = '/api/schedules';
@@ -41,6 +45,19 @@ async function handleResponse(res: Response): Promise<unknown> {
     throw new Error(apiErrorMessage(json, res.status));
   }
   return json;
+}
+
+export async function fetchDraftSubmissionSummary(
+  year: number,
+  month: number,
+): Promise<DraftSubmissionSummary> {
+  const params = new URLSearchParams({
+    year: String(year),
+    month: String(month),
+  });
+  const res = await apiFetch(`${SCHEDULES_PATH}/draft-submissions/summary?${params.toString()}`);
+  const json = await handleResponse(res);
+  return draftSubmissionSummarySchema.parse(json);
 }
 
 /** Tymczasowe dane demo — zamień na fetch z API / Supabase */

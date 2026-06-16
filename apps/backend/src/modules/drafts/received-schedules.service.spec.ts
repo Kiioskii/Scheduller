@@ -158,6 +158,24 @@ describe('ReceivedSchedulesService', () => {
     );
   });
 
+  it('returns draft submission summary for active workers', async () => {
+    getClient.mockReturnValue(
+      createStatusesSupabaseMock([
+        { worker_id: 1, year: 2026, month: 6, recived: true },
+        { worker_id: 1, year: 2026, month: 6, recived: true },
+      ]),
+    );
+
+    const summary = await service.getDraftSubmissionSummary(2026, 6);
+
+    expect(summary).toEqual({
+      year: 2026,
+      month: 6,
+      activeWorkers: 1,
+      submittedCount: 1,
+    });
+  });
+
   describe('submitWorkerDraft', () => {
     const file = createSamplePodkladFixture();
 
