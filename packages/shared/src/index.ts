@@ -3,6 +3,16 @@ export * from './schemas/draft-import';
 export * from './schemas/health';
 export * from './schemas/received-schedule';
 export * from './schemas/schedule';
+export {
+  generateScheduleInputSchema,
+  generateScheduleResultSchema,
+  scheduleDayAssignmentSchema,
+} from './schemas/schedule-generate';
+export type {
+  GenerateScheduleInput,
+  GenerateScheduleResult,
+  ScheduleDayAssignment,
+} from './schemas/schedule-generate';
 export * from './schemas/schedule-import';
 export * from './schemas/shift-template';
 export * from './schemas/submit-draft';

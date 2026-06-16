@@ -6,6 +6,11 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+import type {
+  GenerateScheduleEngineRequest,
+  GenerateScheduleEngineResult,
+} from './scheduler-engine.types';
+
 export type PodkladTemplateResult = {
   buffer: Buffer;
   fileName: string;
@@ -68,6 +73,49 @@ export class SchedulerEngineService {
       `attachment; filename="${fileName.replace(/[^\x20-\x7E]/g, '_')}"`;
 
     return { buffer, fileName, contentDisposition };
+  }
+
+  async generateSchedule(
+    payload: GenerateScheduleEngineRequest,
+  ): Promise<GenerateScheduleEngineResult> {
+    const baseUrl = this.config.get<string>('SCHEDULER_ENGINE_URL')?.replace(/\/$/, '');
+    if (!baseUrl) {
+      throw new ServiceUnavailableException('Scheduler engine URL is not configured');
+    }
+
+    const url = new URL('/internal/v1/schedules/generate', baseUrl);
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    };
+
+    const apiKey = this.config.get<string>('SCHEDULER_ENGINE_API_KEY');
+    if (apiKey) {
+      headers['X-Internal-Api-Key'] = apiKey;
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      this.logger.error('Scheduler engine schedule generation failed', error);
+      throw new BadGatewayException('Nie udało się połączyć z serwisem scheduler-engine');
+    }
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      this.logger.warn(`Scheduler engine responded ${response.status}: ${detail}`);
+      throw new BadGatewayException(
+        'Serwis scheduler-engine zwrócił błąd podczas generowania grafiku',
+      );
+    }
+
+    const json = (await response.json()) as GenerateScheduleEngineResult;
+    return json;
   }
 
   private parseFileNameFromContentDisposition(header: string | null): string | null {

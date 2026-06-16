@@ -24,6 +24,7 @@ import type { Response } from 'express';
 import { SchedulesService } from './schedules.service';
 import { SaveImportedSchedulesResultDto } from '../../swagger/dto/schedule.dto';
 import { DraftSubmissionSummaryDto } from '../../swagger/dto/draft-submission-summary.dto';
+import { GenerateScheduleResultDto } from '../../swagger/dto/schedule-generate.dto';
 
 @ApiTags('schedules')
 @Controller('schedules')
@@ -42,6 +43,33 @@ export class SchedulesController {
     const year = Number(yearParam);
     const month = Number(monthParam);
     return this.schedulesService.getDraftSubmissionSummary(year, month);
+  }
+
+  @Post('generate')
+  @ApiOperation({ summary: 'Wygeneruj grafik na podstawie podkładów i szablonów zmian' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['year', 'month', 'dayAssignments'],
+      properties: {
+        year: { type: 'number', example: 2026 },
+        month: { type: 'number', example: 6 },
+        dayAssignments: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              date: { type: 'string', example: '2026-06-01' },
+              shiftTemplateId: { type: 'string', example: '1' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiOkResponse({ type: GenerateScheduleResultDto })
+  generateSchedule(@Body() body: unknown) {
+    return this.schedulesService.generateSchedule(body);
   }
 
   @Get('template')

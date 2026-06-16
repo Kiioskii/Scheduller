@@ -1,9 +1,10 @@
 import { useCallback, useState } from 'react';
+import type { ScheduleDayAssignment } from '@scheduler/shared';
 
+import { generateSchedule as generateScheduleApi } from '../api/schedule.api';
 import {
-  createMockGeneratedSchedules,
-  findGeneratedSchedule,
   GENERATED_SCHEDULES_STORAGE_KEY,
+  normalizeGeneratedSchedules,
   sortGeneratedSchedules,
   type GeneratedSchedule,
 } from '../lib/generated-schedule';
@@ -11,21 +12,18 @@ import type { ScheduleMonth } from '../lib/schedule-month';
 
 function loadGeneratedSchedules(): GeneratedSchedule[] {
   if (typeof window === 'undefined') {
-    return createMockGeneratedSchedules();
+    return [];
   }
 
   const raw = window.localStorage.getItem(GENERATED_SCHEDULES_STORAGE_KEY);
   if (!raw) {
-    const initial = createMockGeneratedSchedules();
-    window.localStorage.setItem(GENERATED_SCHEDULES_STORAGE_KEY, JSON.stringify(initial));
-    return initial;
+    return [];
   }
 
   try {
-    const parsed = JSON.parse(raw) as GeneratedSchedule[];
-    return sortGeneratedSchedules(Array.isArray(parsed) ? parsed : createMockGeneratedSchedules());
+    return normalizeGeneratedSchedules(JSON.parse(raw));
   } catch {
-    return createMockGeneratedSchedules();
+    return [];
   }
 }
 
@@ -38,30 +36,49 @@ export function useGeneratedSchedules() {
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const generateSchedule = useCallback((month: ScheduleMonth) => {
-    setError(null);
+  const generateSchedule = useCallback(
+    async (month: ScheduleMonth, dayAssignments: ScheduleDayAssignment[]) => {
+      setError(null);
 
-    if (findGeneratedSchedule(schedules, month)) {
-      setError(`Grafik na ${month.month}/${month.year} został już wygenerowany.`);
-      return false;
-    }
+      if (dayAssignments.length === 0) {
+        setError('Przypisz co najmniej jeden dzień do szablonu zmian.');
+        return false;
+      }
 
-    setIsGenerating(true);
+      setIsGenerating(true);
 
-    const entry: GeneratedSchedule = {
-      id: crypto.randomUUID(),
-      year: month.year,
-      month: month.month,
-      createdAt: new Date().toISOString(),
-      status: 'generated',
-    };
+      try {
+        const result = await generateScheduleApi(month.year, month.month, dayAssignments);
 
-    const nextSchedules = sortGeneratedSchedules([entry, ...schedules]);
-    setSchedules(nextSchedules);
-    persistGeneratedSchedules(nextSchedules);
-    setIsGenerating(false);
-    return true;
-  }, [schedules]);
+        const entry: GeneratedSchedule = {
+          id: result.jobId,
+          year: result.year,
+          month: result.month,
+          createdAt: new Date().toISOString(),
+          status: 'generated',
+          dayAssignments,
+          jobId: result.jobId,
+        };
+
+        setSchedules((current) => {
+          const nextSchedules = sortGeneratedSchedules([entry, ...current]);
+          persistGeneratedSchedules(nextSchedules);
+          return nextSchedules;
+        });
+        return true;
+      } catch (generateError) {
+        setError(
+          generateError instanceof Error
+            ? generateError.message
+            : 'Nie udało się wygenerować grafiku.',
+        );
+        return false;
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [],
+  );
 
   return {
     schedules,
