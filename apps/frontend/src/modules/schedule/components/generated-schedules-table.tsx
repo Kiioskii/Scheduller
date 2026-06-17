@@ -16,15 +16,39 @@ const STATUS_LABELS: Record<GeneratedSchedule['status'], string> = {
   draft: 'Szkic',
 };
 
-const columnHelper = createColumnHelper<GeneratedSchedule>();
+const columnHelper = createColumnHelper<GeneratedSchedule & { version: number }>();
 
 type GeneratedSchedulesTableProps = {
   schedules: GeneratedSchedule[];
 };
 
 export function GeneratedSchedulesTable({ schedules }: GeneratedSchedulesTableProps) {
+  const rows = useMemo(() => {
+    const sorted = [...schedules].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+
+    const versionById = new Map<string, number>();
+    const ascending = [...schedules].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+    ascending.forEach((entry, index) => {
+      versionById.set(entry.id, index + 1);
+    });
+
+    return sorted.map((entry) => ({
+      ...entry,
+      version: versionById.get(entry.id) ?? 1,
+    }));
+  }, [schedules]);
+
   const columns = useMemo(
     () => [
+      columnHelper.display({
+        id: 'version',
+        header: 'Wersja',
+        cell: (info) => <span className="font-medium">#{info.row.original.version}</span>,
+      }),
       columnHelper.display({
         id: 'period',
         header: 'Miesiąc',
@@ -33,6 +57,10 @@ export function GeneratedSchedulesTable({ schedules }: GeneratedSchedulesTablePr
       columnHelper.accessor('createdAt', {
         header: 'Wygenerowano',
         cell: (info) => new Date(info.getValue()).toLocaleString('pl-PL'),
+      }),
+      columnHelper.accessor('dayAssignments', {
+        header: 'Dni ze szablonem',
+        cell: (info) => info.getValue().length,
       }),
       columnHelper.accessor('status', {
         header: 'Status',
@@ -57,7 +85,7 @@ export function GeneratedSchedulesTable({ schedules }: GeneratedSchedulesTablePr
   );
 
   const table = useReactTable({
-    data: schedules,
+    data: rows,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
@@ -67,7 +95,8 @@ export function GeneratedSchedulesTable({ schedules }: GeneratedSchedulesTablePr
       <div>
         <h3 className="text-base font-semibold tracking-tight">Lista grafików</h3>
         <p className="text-sm text-muted-foreground">
-          Grafiki zapisane lokalnie w przeglądarce (mock frontendu).
+          Wygenerowane wersje grafiku za wybrany miesiąc. Możesz utworzyć wiele wariantów dla tego
+          samego okresu.
         </p>
       </div>
 
@@ -90,7 +119,7 @@ export function GeneratedSchedulesTable({ schedules }: GeneratedSchedulesTablePr
             {table.getRowModel().rows.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="px-4 py-8 text-center text-muted-foreground">
-                  Brak wygenerowanych grafików.
+                  Brak wygenerowanych grafików za ten miesiąc.
                 </td>
               </tr>
             ) : (

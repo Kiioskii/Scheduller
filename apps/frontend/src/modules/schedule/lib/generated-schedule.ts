@@ -1,7 +1,11 @@
+import type { ScheduleDayAssignment } from '@scheduler/shared';
+
 import type { ScheduleMonth } from './schedule-month';
 import { isSameScheduleMonth } from './schedule-month';
 
 export type GeneratedScheduleStatus = 'generated' | 'draft';
+
+export type { ScheduleDayAssignment };
 
 export type GeneratedSchedule = {
   id: string;
@@ -9,36 +13,54 @@ export type GeneratedSchedule = {
   month: number;
   createdAt: string;
   status: GeneratedScheduleStatus;
+  dayAssignments: ScheduleDayAssignment[];
+  jobId?: string;
 };
 
 export const GENERATED_SCHEDULES_STORAGE_KEY = 'scheduler.generated-schedules';
 
-export function findGeneratedSchedule(
+export function filterSchedulesByMonth(
   schedules: GeneratedSchedule[],
   month: ScheduleMonth,
-): GeneratedSchedule | undefined {
-  return schedules.find((entry) => isSameScheduleMonth(entry, month));
+): GeneratedSchedule[] {
+  return schedules.filter((entry) => isSameScheduleMonth(entry, month));
 }
 
 export function sortGeneratedSchedules(schedules: GeneratedSchedule[]): GeneratedSchedule[] {
-  return [...schedules].sort((a, b) => b.year - a.year || b.month - a.month);
+  return [...schedules].sort((a, b) => {
+    const byYear = b.year - a.year;
+    if (byYear !== 0) return byYear;
+
+    const byMonth = b.month - a.month;
+    if (byMonth !== 0) return byMonth;
+
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 }
 
-export function createMockGeneratedSchedules(): GeneratedSchedule[] {
-  return [
-    {
-      id: 'mock-schedule-2026-05',
-      year: 2026,
-      month: 5,
-      createdAt: '2026-05-10T09:00:00.000Z',
-      status: 'generated',
-    },
-    {
-      id: 'mock-schedule-2026-04',
-      year: 2026,
-      month: 4,
-      createdAt: '2026-04-08T11:30:00.000Z',
-      status: 'generated',
-    },
-  ];
+function isLegacyMockSchedule(entry: GeneratedSchedule): boolean {
+  return entry.id.startsWith('mock-schedule-');
+}
+
+export function normalizeGeneratedSchedules(schedules: unknown): GeneratedSchedule[] {
+  if (!Array.isArray(schedules)) return [];
+
+  return sortGeneratedSchedules(
+    schedules
+      .filter((entry): entry is GeneratedSchedule => {
+        if (!entry || typeof entry !== 'object') return false;
+        const candidate = entry as GeneratedSchedule;
+        return (
+          typeof candidate.id === 'string' &&
+          typeof candidate.year === 'number' &&
+          typeof candidate.month === 'number' &&
+          typeof candidate.createdAt === 'string' &&
+          !isLegacyMockSchedule(candidate)
+        );
+      })
+      .map((entry) => ({
+        ...entry,
+        dayAssignments: entry.dayAssignments ?? [],
+      })),
+  );
 }

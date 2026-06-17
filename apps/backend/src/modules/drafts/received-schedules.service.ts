@@ -235,6 +235,41 @@ export class ReceivedSchedulesService {
     return this.normalizeYearMonth(year, month);
   }
 
+  async downloadAllMonthDraftFiles(
+    year: number,
+    month: number,
+  ): Promise<
+    Array<{
+      draftId: string;
+      workerId: string;
+      fileName: string;
+      buffer: Buffer;
+    }>
+  > {
+    const { year: normalizedYear, month: normalizedMonth } = this.normalizeYearMonth(year, month);
+    const rows = await this.fetchReceivedRows(normalizedYear, normalizedMonth);
+
+    const receivedRows = rows.filter(
+      (row) => isReceivedFlag(row.recived) && row.storage_path?.trim(),
+    );
+
+    return Promise.all(
+      receivedRows.map(async (row) => {
+        const { buffer } = await this.draftStorageService.downloadWorkerDraftFile(
+          row.storage_path,
+          row.file_name,
+        );
+
+        return {
+          draftId: String(row.id),
+          workerId: String(row.worker_id),
+          fileName: row.file_name,
+          buffer,
+        };
+      }),
+    );
+  }
+
   private async resolveDraftIdForDownload(
     workerId: string,
     year: number,

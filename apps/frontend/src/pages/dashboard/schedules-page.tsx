@@ -1,28 +1,39 @@
-import { useState } from 'react';
-import { Loader2, Sparkles } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
   DraftSubmissionSummary,
   GeneratedSchedulesTable,
+  GenerateScheduleDialog,
   ScheduleMonthPicker,
+  filterSchedulesByMonth,
   formatScheduleMonth,
   getCurrentScheduleMonth,
   useGeneratedSchedules,
+  type ScheduleDayAssignment,
   type ScheduleMonth,
 } from '@/modules/schedule';
 
 export function DashboardSchedulesPage() {
   const [selectedMonth, setSelectedMonth] = useState<ScheduleMonth>(getCurrentScheduleMonth);
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const { schedules, generateSchedule, isGenerating, error, clearError } = useGeneratedSchedules();
-
-  function handleGenerateSchedule() {
-    generateSchedule(selectedMonth);
-  }
+  const monthSchedules = useMemo(
+    () => filterSchedulesByMonth(schedules, selectedMonth),
+    [schedules, selectedMonth],
+  );
 
   function handleMonthChange(month: ScheduleMonth) {
     clearError();
     setSelectedMonth(month);
+  }
+
+  async function handleGenerate(dayAssignments: ScheduleDayAssignment[]) {
+    const success = await generateSchedule(selectedMonth, dayAssignments);
+    if (success) {
+      setShowGenerateDialog(false);
+    }
   }
 
   return (
@@ -34,12 +45,8 @@ export function DashboardSchedulesPage() {
             Przegląd wygenerowanych grafików i status podkładów za wybrany miesiąc.
           </p>
         </div>
-        <Button
-          type="button"
-          disabled={isGenerating}
-          onClick={handleGenerateSchedule}
-        >
-          {isGenerating ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+        <Button type="button" onClick={() => setShowGenerateDialog(true)}>
+          <Sparkles className="size-4" />
           Wygeneruj grafik
         </Button>
       </div>
@@ -48,13 +55,26 @@ export function DashboardSchedulesPage() {
 
       <DraftSubmissionSummary month={selectedMonth} />
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && !showGenerateDialog && <p className="text-sm text-destructive">{error}</p>}
 
       <p className="text-sm text-muted-foreground">
         Wybrany miesiąc do generowania: <strong>{formatScheduleMonth(selectedMonth)}</strong>
       </p>
 
-      <GeneratedSchedulesTable schedules={schedules} />
+      <GeneratedSchedulesTable schedules={monthSchedules} />
+
+      <GenerateScheduleDialog
+        open={showGenerateDialog}
+        month={selectedMonth}
+        isGenerating={isGenerating}
+        error={error}
+        onClose={() => {
+          clearError();
+          setShowGenerateDialog(false);
+        }}
+        onGenerate={handleGenerate}
+        onClearError={clearError}
+      />
     </div>
   );
 }
