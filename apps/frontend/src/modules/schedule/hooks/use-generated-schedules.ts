@@ -85,6 +85,7 @@ export function useGeneratedSchedules() {
           preview: result.preview,
           solverStatus: result.solverStatus,
           assignmentCount: result.assignmentCount,
+          totalSlotCount: result.totalSlotCount,
           message: result.message,
         };
 

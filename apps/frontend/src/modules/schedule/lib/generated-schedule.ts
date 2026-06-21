@@ -18,6 +18,7 @@ export type GeneratedSchedule = {
   preview?: SchedulePreview;
   solverStatus?: 'optimal' | 'feasible' | 'infeasible';
   assignmentCount?: number;
+  totalSlotCount?: number;
   message?: string;
 };
 

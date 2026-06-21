@@ -65,6 +65,7 @@ export function DashboardSchedulesPage() {
       draftCount: 0,
       holidayCount: 0,
       assignmentCount: schedule.assignmentCount ?? 0,
+      totalSlotCount: schedule.totalSlotCount ?? schedule.assignmentCount ?? 0,
       solverStatus: schedule.solverStatus ?? 'feasible',
       message: schedule.message ?? 'Zaakceptowany grafik',
       preview: schedule.preview,
