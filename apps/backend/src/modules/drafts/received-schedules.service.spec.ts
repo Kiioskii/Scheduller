@@ -16,6 +16,7 @@ const workers = [
     role: 'worker' as const,
     priority: 5,
     checker: false,
+    availableAsWorker: true,
     deleted: false,
   },
   {
@@ -25,6 +26,7 @@ const workers = [
     role: 'boss' as const,
     priority: 1,
     checker: true,
+    availableAsWorker: true,
     deleted: true,
   },
 ];

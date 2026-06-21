@@ -61,6 +61,7 @@ export class ReceivedSchedulesService {
       role: worker.role,
       priority: worker.priority,
       checker: worker.checker,
+      available_as_worker: worker.availableAsWorker,
       deleted: worker.deleted,
     }));
 

@@ -168,6 +168,43 @@ export function WorkersTable() {
           );
         },
       }),
+      columnHelper.accessor('availableAsWorker', {
+        header: 'Praca na hali',
+        cell: (info) => {
+          const worker = info.row.original;
+          if (worker.role !== 'boss') {
+            return <span className="text-muted-foreground">—</span>;
+          }
+
+          const checked = info.getValue();
+          return (
+            <Button
+              type="button"
+              variant={checked ? 'default' : 'outline'}
+              size="sm"
+              disabled={isUpdating || worker.deleted}
+              aria-pressed={checked}
+              aria-label={`Praca na hali dla ${worker.firstName} ${worker.lastName}: ${checked ? 'tak' : 'nie'}`}
+              onClick={() =>
+                updateWorker.mutate({ id: worker.id, availableAsWorker: !checked })
+              }
+              className="min-w-[4.5rem] gap-1.5"
+            >
+              {checked ? (
+                <>
+                  <Check className="size-3.5" />
+                  Tak
+                </>
+              ) : (
+                <>
+                  <X className="size-3.5" />
+                  Nie
+                </>
+              )}
+            </Button>
+          );
+        },
+      }),
       columnHelper.accessor('deleted', {
         header: 'Status',
         cell: (info) => (
