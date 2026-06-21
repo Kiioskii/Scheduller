@@ -1,11 +1,11 @@
-import type { ScheduleDayAssignment } from '@scheduler/shared';
+import type { ScheduleDayAssignment, SchedulePreview } from '@scheduler/shared';
 
 import type { ScheduleMonth } from './schedule-month';
 import { isSameScheduleMonth } from './schedule-month';
 
-export type GeneratedScheduleStatus = 'generated' | 'draft';
+export type GeneratedScheduleStatus = 'generated' | 'draft' | 'pending';
 
-export type { ScheduleDayAssignment };
+export type { ScheduleDayAssignment, SchedulePreview };
 
 export type GeneratedSchedule = {
   id: string;
@@ -15,6 +15,11 @@ export type GeneratedSchedule = {
   status: GeneratedScheduleStatus;
   dayAssignments: ScheduleDayAssignment[];
   jobId?: string;
+  preview?: SchedulePreview;
+  solverStatus?: 'optimal' | 'feasible' | 'infeasible';
+  assignmentCount?: number;
+  totalSlotCount?: number;
+  message?: string;
 };
 
 export const GENERATED_SCHEDULES_STORAGE_KEY = 'scheduler.generated-schedules';

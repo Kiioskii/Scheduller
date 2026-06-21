@@ -94,10 +94,11 @@ def solve_schedule(
         bosses_only=True,
     )
     if boss_result.unassigned_slot_ids:
+        worker_unassigned = [slot.slot_id for slot in worker_slots]
         return SolverResult(
             status="infeasible",
-            assignments=[],
-            unassigned_slot_ids=[slot.slot_id for slot in slots],
+            assignments=boss_result.assignments,
+            unassigned_slot_ids=boss_result.unassigned_slot_ids + worker_unassigned,
         )
 
     busy_workers = {(assignment.worker_id, assignment.date) for assignment in boss_result.assignments}
@@ -112,7 +113,11 @@ def solve_schedule(
     assignments = boss_result.assignments + worker_result.assignments
     unassigned = boss_result.unassigned_slot_ids + worker_result.unassigned_slot_ids
     if unassigned:
-        return SolverResult(status="infeasible", assignments=[], unassigned_slot_ids=unassigned)
+        return SolverResult(
+            status="infeasible",
+            assignments=assignments,
+            unassigned_slot_ids=unassigned,
+        )
 
     solver_status: Literal["optimal", "feasible"] = (
         "optimal"
@@ -230,7 +235,7 @@ def _assignment_preference_cost(
     availability: dict[tuple[str, str], list[TimeRange]],
 ) -> int:
     cost = 0
-    if worker.role == "boss" and slot.role == "worker":
+    if worker.role == "boss" and slot.role == "worker" and worker.available_as_worker:
         cost += BOSS_AS_WORKER_PENALTY
 
     day_ranges = availability.get((worker.worker_id, slot.date), [])
@@ -264,8 +269,14 @@ def _worker_can_take_slot(
             return False
     elif slot.role == "boss":
         return False
-    elif slot.role == "worker" and worker.role not in {"worker", "boss"}:
-        return False
+    elif slot.role == "worker":
+        if worker.role == "worker":
+            pass
+        elif worker.role == "boss":
+            if not worker.available_as_worker:
+                return False
+        else:
+            return False
 
     day_ranges = availability.get((worker.worker_id, slot.date))
     if not day_ranges:

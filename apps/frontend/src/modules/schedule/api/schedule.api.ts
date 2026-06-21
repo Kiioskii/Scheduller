@@ -1,21 +1,25 @@
 import {
   draftSubmissionSummarySchema,
+  exportGrafikPdfInputSchema,
+  exportGrafikPdfResultSchema,
   generateScheduleInputSchema,
   generateScheduleResultSchema,
   importedScheduleFileSchema,
   saveImportedSchedulesInputSchema,
   scheduleEntrySchema,
   type DraftSubmissionSummary,
+  type ExportGrafikPdfResult,
   type GenerateScheduleResult,
   type ImportedScheduleFile,
   type ScheduleDayAssignment,
+  type SchedulePreview,
 } from '@scheduler/shared';
 import { z } from 'zod';
 
 import { apiFetch } from '@/lib/http';
 
 export type ScheduleEntry = z.infer<typeof scheduleEntrySchema>;
-export type { ImportedScheduleFile, DraftSubmissionSummary, ScheduleDayAssignment };
+export type { ImportedScheduleFile, DraftSubmissionSummary, ScheduleDayAssignment, SchedulePreview, GenerateScheduleResult };
 
 export const scheduleKeys = {
   all: ['schedule'] as const,
@@ -77,6 +81,17 @@ export async function generateSchedule(
   });
   const json = await handleResponse(res);
   return generateScheduleResultSchema.parse(json);
+}
+
+export async function exportGrafikPdf(preview: SchedulePreview): Promise<ExportGrafikPdfResult> {
+  const body = exportGrafikPdfInputSchema.parse({ preview });
+  const res = await apiFetch(`${SCHEDULES_PATH}/export/pdf`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const json = await handleResponse(res);
+  return exportGrafikPdfResultSchema.parse(json);
 }
 
 /** Tymczasowe dane demo — zamień na fetch z API / Supabase */

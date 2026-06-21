@@ -12,17 +12,19 @@ import type { GeneratedSchedule } from '../lib/generated-schedule';
 import { formatScheduleMonth } from '../lib/schedule-month';
 
 const STATUS_LABELS: Record<GeneratedSchedule['status'], string> = {
-  generated: 'Wygenerowany',
+  generated: 'Zaakceptowany',
   draft: 'Szkic',
+  pending: 'Do akceptacji',
 };
 
 const columnHelper = createColumnHelper<GeneratedSchedule & { version: number }>();
 
 type GeneratedSchedulesTableProps = {
   schedules: GeneratedSchedule[];
+  onPreview?: (schedule: GeneratedSchedule) => void;
 };
 
-export function GeneratedSchedulesTable({ schedules }: GeneratedSchedulesTableProps) {
+export function GeneratedSchedulesTable({ schedules, onPreview }: GeneratedSchedulesTableProps) {
   const rows = useMemo(() => {
     const sorted = [...schedules].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -80,8 +82,25 @@ export function GeneratedSchedulesTable({ schedules }: GeneratedSchedulesTablePr
           );
         },
       }),
+      columnHelper.display({
+        id: 'preview',
+        header: '',
+        cell: (info) => {
+          const schedule = info.row.original;
+          if (!schedule.preview || !onPreview) return null;
+          return (
+            <button
+              type="button"
+              className="text-sm text-primary underline-offset-4 hover:underline"
+              onClick={() => onPreview(schedule)}
+            >
+              Podgląd
+            </button>
+          );
+        },
+      }),
     ],
-    [],
+    [onPreview],
   );
 
   const table = useReactTable({

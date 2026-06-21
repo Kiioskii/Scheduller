@@ -1,6 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   draftSubmissionSummarySchema,
+  exportGrafikPdfInputSchema,
   generateScheduleInputSchema,
   generateScheduleResultSchema,
   importedScheduleFileSchema,
@@ -19,10 +21,18 @@ import { FilesService, type UploadFilePayload } from '../files/files.service';
 import { HolidaysService } from '../holidays/holidays.service';
 import { ShiftsService } from '../shifts/shifts.service';
 import { WorkersService } from '../workers/workers.service';
+import {
+  buildMockGenerateScheduleResult,
+  isScheduleGenerateMockEnabled,
+  shouldUseMockWorkerDrafts,
+} from './schedule-generate.mock';
 
 @Injectable()
-export class SchedulesService {
+export class SchedulesService implements OnModuleInit {
+  private readonly logger = new Logger(SchedulesService.name);
+
   constructor(
+    private readonly config: ConfigService,
     private readonly filesService: FilesService,
     private readonly schedulerEngine: SchedulerEngineService,
     private readonly holidaysService: HolidaysService,
@@ -30,6 +40,14 @@ export class SchedulesService {
     private readonly shiftsService: ShiftsService,
     private readonly workersService: WorkersService,
   ) {}
+
+  onModuleInit(): void {
+    if (shouldUseMockWorkerDrafts(this.config)) {
+      this.logger.warn(
+        'Mock worker drafts enabled — all active workers get synthetic podkłady for schedule generation',
+      );
+    }
+  }
 
   async getDraftSubmissionSummary(year: number, month: number): Promise<DraftSubmissionSummary> {
     const normalized = this.normalizeYearMonth(year, month);
@@ -48,6 +66,17 @@ export class SchedulesService {
 
     const { year, month, dayAssignments } = parsed.data;
     const normalized = this.normalizeYearMonth(year, month);
+    const useMockWorkerDrafts = shouldUseMockWorkerDrafts(this.config);
+
+    if (
+      isScheduleGenerateMockEnabled(this.config.get<string>('SCHEDULE_GENERATE_MOCK_STATIC')) &&
+      !useMockWorkerDrafts
+    ) {
+      this.logger.warn(
+        `Returning static mock schedule for ${normalized.year}-${normalized.month}`,
+      );
+      return buildMockGenerateScheduleResult(normalized.year, normalized.month);
+    }
 
     const [workerDrafts, holidays, shiftTemplates, workers] = await Promise.all([
       this.receivedSchedulesService.downloadAllMonthDraftFiles(normalized.year, normalized.month),
@@ -69,17 +98,45 @@ export class SchedulesService {
         fileName: draft.fileName,
         contentBase64: draft.buffer.toString('base64'),
       })),
+      mockWorkerDrafts: useMockWorkerDrafts,
     };
 
+    if (useMockWorkerDrafts) {
+      this.logger.warn(
+        `Generating schedule with mock worker drafts for ${normalized.year}-${normalized.month}`,
+      );
+    }
+
     const engineResult = await this.schedulerEngine.generateSchedule(enginePayload);
+
+    const engineStatus = engineResult.status === 'completed' ? 'accepted' : 'failed';
 
     return generateScheduleResultSchema.parse({
       jobId: engineResult.jobId,
       year: normalized.year,
       month: normalized.month,
-      status: 'accepted',
-      draftCount: workerDrafts.length,
+      status: engineStatus,
+      draftCount: engineResult.workerCount ?? workerDrafts.length,
       holidayCount: holidays.length,
+      assignmentCount: engineResult.assignmentCount,
+      totalSlotCount: engineResult.totalSlotCount,
+      solverStatus: engineResult.solverStatus,
+      message: useMockWorkerDrafts
+        ? `${engineResult.message} (użyto zmockowanych podkładów dla wszystkich aktywnych pracowników)`
+        : engineResult.message,
+      preview: engineResult.preview,
+      unassignedSlotIds: engineResult.unassignedSlotIds,
+    });
+  }
+
+  async exportGrafikPdf(body: unknown): Promise<{ fileName: string; contentBase64: string }> {
+    const parsed = exportGrafikPdfInputSchema.safeParse(body);
+    if (!parsed.success) {
+      throw new BadRequestException(parsed.error.flatten());
+    }
+
+    return this.schedulerEngine.exportGrafikPdf({
+      preview: parsed.data.preview,
     });
   }
 
