@@ -1,4 +1,4 @@
-import type { Holiday, ScheduleDayAssignment, ShiftTemplate } from '@scheduler/shared';
+import type { Holiday, ScheduleDayAssignment, ShiftTemplate, Worker } from '@scheduler/shared';
 
 export type WorkerDraftPayload = {
   draftId: string;
@@ -14,12 +14,19 @@ export type GenerateScheduleEngineRequest = {
   holidays: Holiday[];
   shiftTemplates: ShiftTemplate[];
   workerDrafts: WorkerDraftPayload[];
+  workers: Worker[];
 };
 
 export type GenerateScheduleEngineResult = {
   jobId: string;
-  status: 'accepted';
+  status: 'completed' | 'failed';
   message: string;
   draftCount: number;
   holidayCount: number;
+  workerCount: number;
+  assignmentCount: number;
+  solverStatus: 'optimal' | 'feasible' | 'infeasible';
+  workers: Array<Record<string, unknown>>;
+  assignments: Array<Record<string, unknown>>;
+  unassignedSlotIds: string[];
 };

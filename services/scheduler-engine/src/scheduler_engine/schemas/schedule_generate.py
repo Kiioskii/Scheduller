@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
-from uuid import uuid4
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -43,6 +42,18 @@ class Holiday(BaseModel):
     model_config = {"populate_by_name": True}
 
 
+class WorkerPayload(BaseModel):
+    id: str
+    first_name: str = Field(alias="firstName")
+    last_name: str = Field(alias="lastName")
+    role: Literal["worker", "boss"]
+    priority: int = Field(ge=1, le=10)
+    checker: bool
+    deleted: bool
+
+    model_config = {"populate_by_name": True}
+
+
 class WorkerDraftPayload(BaseModel):
     draft_id: str = Field(alias="draftId")
     worker_id: str = Field(alias="workerId")
@@ -59,15 +70,22 @@ class GenerateScheduleRequest(BaseModel):
     holidays: list[Holiday]
     shift_templates: list[ShiftTemplate] = Field(alias="shiftTemplates")
     worker_drafts: list[WorkerDraftPayload] = Field(alias="workerDrafts")
+    workers: list[WorkerPayload]
 
     model_config = {"populate_by_name": True}
 
 
 class GenerateScheduleResponse(BaseModel):
     job_id: str = Field(alias="jobId")
-    status: Literal["accepted"] = "accepted"
+    status: Literal["completed", "failed"]
     message: str
     draft_count: int = Field(alias="draftCount")
     holiday_count: int = Field(alias="holidayCount")
+    worker_count: int = Field(alias="workerCount")
+    assignment_count: int = Field(alias="assignmentCount")
+    workers: list[dict[str, Any]]
+    assignments: list[dict[str, Any]]
+    solver_status: Literal["optimal", "feasible", "infeasible"] = Field(alias="solverStatus")
+    unassigned_slot_ids: list[str] = Field(alias="unassignedSlotIds")
 
     model_config = {"populate_by_name": True, "by_alias": True}

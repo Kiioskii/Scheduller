@@ -1,5 +1,3 @@
-from uuid import uuid4
-
 from fastapi import APIRouter, Depends
 
 from scheduler_engine.api.dependencies import SettingsDep, verify_internal_api_key
@@ -7,6 +5,7 @@ from scheduler_engine.schemas.schedule_generate import (
     GenerateScheduleRequest,
     GenerateScheduleResponse,
 )
+from scheduler_engine.services.schedule_generator import ScheduleGeneratorService
 
 router = APIRouter(
     prefix="/schedules",
@@ -20,11 +19,4 @@ def generate_schedule(
     _settings: SettingsDep,
     payload: GenerateScheduleRequest,
 ) -> GenerateScheduleResponse:
-    """Stub endpoint — accepts schedule generation payload without running the solver yet."""
-    return GenerateScheduleResponse(
-        job_id=str(uuid4()),
-        status="accepted",
-        message="Schedule generation is not implemented yet",
-        draft_count=len(payload.worker_drafts),
-        holiday_count=len(payload.holidays),
-    )
+    return ScheduleGeneratorService().generate(payload)
