@@ -18,6 +18,7 @@ const sampleRow: WorkerRow = {
   role: 'worker',
   priority: 5,
   checker: true,
+  available_as_worker: true,
   deleted: false,
 };
 
@@ -118,6 +119,7 @@ describe('WorkersService', () => {
           role: 'worker',
           priority: 5,
           checker: true,
+          availableAsWorker: true,
           deleted: false,
         },
       ]);

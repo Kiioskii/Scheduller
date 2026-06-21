@@ -19,6 +19,9 @@ export class WorkerDto {
   @ApiProperty({ example: false })
   checker!: boolean;
 
+  @ApiProperty({ example: true })
+  availableAsWorker!: boolean;
+
   @ApiProperty({ example: false })
   deleted!: boolean;
 }
@@ -38,6 +41,9 @@ export class CreateWorkerDto {
 
   @ApiPropertyOptional({ example: false })
   checker?: boolean;
+
+  @ApiPropertyOptional({ example: true })
+  availableAsWorker?: boolean;
 }
 
 export class UpdateWorkerDto {
@@ -49,6 +55,9 @@ export class UpdateWorkerDto {
 
   @ApiPropertyOptional()
   checker?: boolean;
+
+  @ApiPropertyOptional()
+  availableAsWorker?: boolean;
 
   @ApiPropertyOptional()
   deleted?: boolean;

@@ -13,13 +13,15 @@ export const workerSchema = z.object({
   role: workerRoleSchema,
   priority: workerPrioritySchema,
   checker: z.boolean(),
+  availableAsWorker: z.boolean(),
   deleted: z.boolean(),
 });
 
 export const createWorkerInputSchema = workerSchema
-  .omit({ id: true, checker: true, deleted: true })
+  .omit({ id: true, checker: true, availableAsWorker: true, deleted: true })
   .extend({
     checker: z.boolean().optional(),
+    availableAsWorker: z.boolean().optional(),
   });
 
 export const updateWorkerInputSchema = z
@@ -27,6 +29,7 @@ export const updateWorkerInputSchema = z
     role: workerRoleSchema.optional(),
     priority: workerPrioritySchema.optional(),
     checker: z.boolean().optional(),
+    availableAsWorker: z.boolean().optional(),
     deleted: z.boolean().optional(),
   })
   .refine((data) => Object.values(data).some((value) => value !== undefined), {
