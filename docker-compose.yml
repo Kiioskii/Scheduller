@@ -53,6 +53,8 @@ services:
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
       SCHEDULER_ENGINE_URL: http://scheduler-engine:8000
       SCHEDULER_ENGINE_API_KEY: ${INTERNAL_API_KEY:-}
+      SCHEDULE_MOCK_WORKER_DRAFTS: ${SCHEDULE_MOCK_WORKER_DRAFTS:-false}
+      SCHEDULE_GENERATE_MOCK: ${SCHEDULE_GENERATE_MOCK:-false}
     depends_on:
       redis:
         condition: service_healthy

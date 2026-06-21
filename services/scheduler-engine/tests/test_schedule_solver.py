@@ -2,7 +2,13 @@ from scheduler_engine.services.podklad_parser import DayDisposition, ParsedWorke
 from scheduler_engine.services.schedule_solver import ShiftSlot, solve_schedule
 
 
-def _worker(worker_id: str, role: str, days: list[DayDisposition]) -> ParsedWorkerDraft:
+def _worker(
+    worker_id: str,
+    role: str,
+    days: list[DayDisposition],
+    *,
+    available_as_worker: bool = True,
+) -> ParsedWorkerDraft:
     return ParsedWorkerDraft(
         worker_id=worker_id,
         draft_id=f"draft-{worker_id}",
@@ -12,6 +18,7 @@ def _worker(worker_id: str, role: str, days: list[DayDisposition]) -> ParsedWork
         role=role,  # type: ignore[arg-type]
         year=2026,
         month=6,
+        available_as_worker=available_as_worker,
         days=days,
     )
 
@@ -237,3 +244,88 @@ def test_full_day_worker_can_take_long_shift_when_only_option() -> None:
     assert len(result.assignments) == 1
     assert result.assignments[0].start == "10:00"
     assert result.assignments[0].end == "20:00"
+
+
+def test_boss_with_available_as_worker_false_cannot_take_worker_slot() -> None:
+    workers = [
+        _worker(
+            "boss-1",
+            "boss",
+            [DayDisposition(date="2026-06-02", ranges=[("08:00", "22:00")])],
+            available_as_worker=False,
+        ),
+    ]
+
+    slots = [
+        ShiftSlot(
+            slot_id="slot-worker",
+            date="2026-06-02",
+            shift_template_id="tpl-1",
+            shift_index=0,
+            role="worker",
+            start="08:00",
+            end="15:15",
+        ),
+        ShiftSlot(
+            slot_id="slot-boss",
+            date="2026-06-02",
+            shift_template_id="tpl-1",
+            shift_index=1,
+            role="boss",
+            start="08:00",
+            end="15:15",
+        ),
+    ]
+
+    result = solve_schedule(workers, slots)
+
+    assert result.status == "infeasible"
+    assert len(result.assignments) == 1
+    assert result.assignments[0].role == "boss"
+    assert "slot-worker" in result.unassigned_slot_ids
+
+
+def test_boss_with_available_as_worker_true_can_take_worker_slot() -> None:
+    workers = [
+        _worker(
+            "boss-1",
+            "boss",
+            [DayDisposition(date="2026-06-02", ranges=[("08:00", "22:00")])],
+            available_as_worker=True,
+        ),
+        _worker(
+            "boss-2",
+            "boss",
+            [DayDisposition(date="2026-06-02", ranges=[("08:00", "22:00")])],
+            available_as_worker=False,
+        ),
+    ]
+
+    slots = [
+        ShiftSlot(
+            slot_id="slot-worker",
+            date="2026-06-02",
+            shift_template_id="tpl-1",
+            shift_index=0,
+            role="worker",
+            start="08:00",
+            end="15:15",
+        ),
+        ShiftSlot(
+            slot_id="slot-boss",
+            date="2026-06-02",
+            shift_template_id="tpl-1",
+            shift_index=1,
+            role="boss",
+            start="08:00",
+            end="15:15",
+        ),
+    ]
+
+    result = solve_schedule(workers, slots)
+
+    assert result.status in {"optimal", "feasible"}
+    worker_assignment = next(item for item in result.assignments if item.role == "worker")
+    boss_assignment = next(item for item in result.assignments if item.role == "boss")
+    assert worker_assignment.worker_id == "boss-1"
+    assert boss_assignment.worker_id == "boss-2"

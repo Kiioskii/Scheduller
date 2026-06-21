@@ -16,6 +16,7 @@ def test_generate_schedule_endpoint_runs_solver(client) -> None:
                     "role": "worker",
                     "priority": 5,
                     "checker": False,
+                    "availableAsWorker": True,
                     "deleted": False,
                 }
             ],
@@ -46,3 +47,5 @@ def test_generate_schedule_endpoint_runs_solver(client) -> None:
     assert data["assignmentCount"] == 0
     assert data["solverStatus"] == "infeasible"
     assert data["jobId"]
+    assert "preview" in data
+    assert data["preview"]["daysInMonth"] == 30

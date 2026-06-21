@@ -15,6 +15,7 @@ export type GenerateScheduleEngineRequest = {
   shiftTemplates: ShiftTemplate[];
   workerDrafts: WorkerDraftPayload[];
   workers: Worker[];
+  mockWorkerDrafts?: boolean;
 };
 
 export type GenerateScheduleEngineResult = {
@@ -25,8 +26,19 @@ export type GenerateScheduleEngineResult = {
   holidayCount: number;
   workerCount: number;
   assignmentCount: number;
+  totalSlotCount: number;
   solverStatus: 'optimal' | 'feasible' | 'infeasible';
   workers: Array<Record<string, unknown>>;
   assignments: Array<Record<string, unknown>>;
+  preview: Record<string, unknown>;
   unassignedSlotIds: string[];
+};
+
+export type ExportGrafikPdfEngineRequest = {
+  preview: Record<string, unknown>;
+};
+
+export type ExportGrafikPdfEngineResult = {
+  fileName: string;
+  contentBase64: string;
 };

@@ -10,12 +10,30 @@ export class GenerateScheduleResultDto {
   @ApiProperty({ example: 6 })
   month!: number;
 
-  @ApiProperty({ example: 'accepted', enum: ['accepted'] })
-  status!: 'accepted';
+  @ApiProperty({ example: 'accepted', enum: ['accepted', 'failed'] })
+  status!: 'accepted' | 'failed';
 
   @ApiProperty({ example: 42 })
   draftCount!: number;
 
   @ApiProperty({ example: 2 })
   holidayCount!: number;
+
+  @ApiProperty({ example: 120 })
+  assignmentCount!: number;
+
+  @ApiProperty({ example: 502 })
+  totalSlotCount!: number;
+
+  @ApiProperty({ example: 'optimal', enum: ['optimal', 'feasible', 'infeasible'] })
+  solverStatus!: 'optimal' | 'feasible' | 'infeasible';
+
+  @ApiProperty({ example: 'Schedule generated successfully' })
+  message!: string;
+
+  @ApiProperty({ type: 'object', additionalProperties: true })
+  preview!: Record<string, unknown>;
+
+  @ApiProperty({ type: [String], example: [] })
+  unassignedSlotIds!: string[];
 }

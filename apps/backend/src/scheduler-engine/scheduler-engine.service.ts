@@ -7,6 +7,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 
 import type {
+  ExportGrafikPdfEngineRequest,
+  ExportGrafikPdfEngineResult,
   GenerateScheduleEngineRequest,
   GenerateScheduleEngineResult,
 } from './scheduler-engine.types';
@@ -116,6 +118,46 @@ export class SchedulerEngineService {
 
     const json = (await response.json()) as GenerateScheduleEngineResult;
     return json;
+  }
+
+  async exportGrafikPdf(
+    payload: ExportGrafikPdfEngineRequest,
+  ): Promise<ExportGrafikPdfEngineResult> {
+    const baseUrl = this.config.get<string>('SCHEDULER_ENGINE_URL')?.replace(/\/$/, '');
+    if (!baseUrl) {
+      throw new ServiceUnavailableException('Scheduler engine URL is not configured');
+    }
+
+    const url = new URL('/internal/v1/schedules/export/pdf', baseUrl);
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    };
+
+    const apiKey = this.config.get<string>('SCHEDULER_ENGINE_API_KEY');
+    if (apiKey) {
+      headers['X-Internal-Api-Key'] = apiKey;
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      this.logger.error('Scheduler engine PDF export failed', error);
+      throw new BadGatewayException('Nie udało się połączyć z serwisem scheduler-engine');
+    }
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      this.logger.warn(`Scheduler engine responded ${response.status}: ${detail}`);
+      throw new BadGatewayException('Serwis scheduler-engine zwrócił błąd podczas eksportu PDF');
+    }
+
+    return (await response.json()) as ExportGrafikPdfEngineResult;
   }
 
   private parseFileNameFromContentDisposition(header: string | null): string | null {

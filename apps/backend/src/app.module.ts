@@ -15,7 +15,12 @@ import { ShiftsModule } from './modules/shifts/shifts.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: [
+        '.env.local',
+        '.env',
+        'apps/backend/.env.local',
+        'apps/backend/.env',
+      ],
     }),
     RedisModule,
     SchedulerEngineModule,

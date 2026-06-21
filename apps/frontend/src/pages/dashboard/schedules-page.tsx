@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Sparkles } from 'lucide-react';
+import type { GenerateScheduleResult } from '@scheduler/shared';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -7,10 +8,13 @@ import {
   GeneratedSchedulesTable,
   GenerateScheduleDialog,
   ScheduleMonthPicker,
+  SchedulePreviewDialog,
   filterSchedulesByMonth,
   formatScheduleMonth,
   getCurrentScheduleMonth,
   useGeneratedSchedules,
+  type GeneratedSchedule,
+  type PendingSchedulePreview,
   type ScheduleDayAssignment,
   type ScheduleMonth,
 } from '@/modules/schedule';
@@ -18,7 +22,11 @@ import {
 export function DashboardSchedulesPage() {
   const [selectedMonth, setSelectedMonth] = useState<ScheduleMonth>(getCurrentScheduleMonth);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
-  const { schedules, generateSchedule, isGenerating, error, clearError } = useGeneratedSchedules();
+  const [pendingPreview, setPendingPreview] = useState<PendingSchedulePreview | null>(null);
+  const [previewReadOnly, setPreviewReadOnly] = useState(false);
+  const [lastDayAssignments, setLastDayAssignments] = useState<ScheduleDayAssignment[]>([]);
+  const { schedules, generateSchedule, acceptSchedule, isGenerating, isAccepting, error, clearError } =
+    useGeneratedSchedules();
   const monthSchedules = useMemo(
     () => filterSchedulesByMonth(schedules, selectedMonth),
     [schedules, selectedMonth],
@@ -30,10 +38,40 @@ export function DashboardSchedulesPage() {
   }
 
   async function handleGenerate(dayAssignments: ScheduleDayAssignment[]) {
-    const success = await generateSchedule(selectedMonth, dayAssignments);
-    if (success) {
-      setShowGenerateDialog(false);
+    const result = await generateSchedule(selectedMonth, dayAssignments);
+    if (!result) {
+      return;
     }
+
+    setLastDayAssignments(dayAssignments);
+    setPreviewReadOnly(false);
+    setPendingPreview({ result, preview: result.preview });
+    setShowGenerateDialog(false);
+  }
+
+  function handleAcceptPreview(pending: PendingSchedulePreview) {
+    acceptSchedule(pending.result, lastDayAssignments);
+    setPendingPreview(null);
+    clearError();
+  }
+
+  function openSavedPreview(schedule: GeneratedSchedule) {
+    if (!schedule.preview) return;
+    const result: GenerateScheduleResult = {
+      jobId: schedule.jobId ?? schedule.id,
+      year: schedule.year,
+      month: schedule.month,
+      status: schedule.solverStatus === 'infeasible' ? 'failed' : 'accepted',
+      draftCount: 0,
+      holidayCount: 0,
+      assignmentCount: schedule.assignmentCount ?? 0,
+      solverStatus: schedule.solverStatus ?? 'feasible',
+      message: schedule.message ?? 'Zaakceptowany grafik',
+      preview: schedule.preview,
+      unassignedSlotIds: [],
+    };
+    setPendingPreview({ result, preview: schedule.preview });
+    setPreviewReadOnly(true);
   }
 
   return (
@@ -55,13 +93,15 @@ export function DashboardSchedulesPage() {
 
       <DraftSubmissionSummary month={selectedMonth} />
 
-      {error && !showGenerateDialog && <p className="text-sm text-destructive">{error}</p>}
+      {error && !showGenerateDialog && !pendingPreview && (
+        <p className="text-sm text-destructive">{error}</p>
+      )}
 
       <p className="text-sm text-muted-foreground">
         Wybrany miesiąc do generowania: <strong>{formatScheduleMonth(selectedMonth)}</strong>
       </p>
 
-      <GeneratedSchedulesTable schedules={monthSchedules} />
+      <GeneratedSchedulesTable schedules={monthSchedules} onPreview={openSavedPreview} />
 
       <GenerateScheduleDialog
         open={showGenerateDialog}
@@ -74,6 +114,15 @@ export function DashboardSchedulesPage() {
         }}
         onGenerate={handleGenerate}
         onClearError={clearError}
+      />
+
+      <SchedulePreviewDialog
+        open={pendingPreview !== null}
+        pending={pendingPreview}
+        isAccepting={isAccepting}
+        readOnly={previewReadOnly}
+        onClose={() => setPendingPreview(null)}
+        onAccept={handleAcceptPreview}
       />
     </div>
   );

@@ -49,6 +49,7 @@ class WorkerPayload(BaseModel):
     role: Literal["worker", "boss"]
     priority: int = Field(ge=1, le=10)
     checker: bool
+    available_as_worker: bool = Field(alias="availableAsWorker", default=True)
     deleted: bool
 
     model_config = {"populate_by_name": True}
@@ -71,6 +72,7 @@ class GenerateScheduleRequest(BaseModel):
     shift_templates: list[ShiftTemplate] = Field(alias="shiftTemplates")
     worker_drafts: list[WorkerDraftPayload] = Field(alias="workerDrafts")
     workers: list[WorkerPayload]
+    mock_worker_drafts: bool = Field(alias="mockWorkerDrafts", default=False)
 
     model_config = {"populate_by_name": True}
 
@@ -83,8 +85,10 @@ class GenerateScheduleResponse(BaseModel):
     holiday_count: int = Field(alias="holidayCount")
     worker_count: int = Field(alias="workerCount")
     assignment_count: int = Field(alias="assignmentCount")
+    total_slot_count: int = Field(alias="totalSlotCount")
     workers: list[dict[str, Any]]
     assignments: list[dict[str, Any]]
+    preview: dict[str, Any]
     solver_status: Literal["optimal", "feasible", "infeasible"] = Field(alias="solverStatus")
     unassigned_slot_ids: list[str] = Field(alias="unassignedSlotIds")
 

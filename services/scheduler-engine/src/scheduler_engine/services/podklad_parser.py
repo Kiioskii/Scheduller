@@ -57,6 +57,8 @@ POLISH_MONTHS: dict[str, int] = {
 class DayDisposition:
     date: str
     ranges: list[TimeRange] = field(default_factory=list)
+    morning_color: FillKind = "none"
+    afternoon_color: FillKind = "none"
 
     @property
     def available(self) -> bool:
@@ -66,6 +68,8 @@ class DayDisposition:
         return {
             "date": self.date,
             "ranges": [{"start": start, "end": end} for start, end in self.ranges],
+            "morningColor": self.morning_color,
+            "afternoonColor": self.afternoon_color,
         }
 
 
@@ -79,6 +83,7 @@ class ParsedWorkerDraft:
     role: WorkerRole
     year: int
     month: int
+    available_as_worker: bool = True
     days: list[DayDisposition] = field(default_factory=list)
 
     def to_json(self) -> dict[str, object]:
@@ -91,6 +96,7 @@ class ParsedWorkerDraft:
             "role": self.role,
             "year": self.year,
             "month": self.month,
+            "availableAsWorker": self.available_as_worker,
             "days": [day.to_json() for day in self.days],
         }
 
@@ -178,40 +184,47 @@ def _extract_day_dispositions(
         col = day_weekday_col(day)
         ranges: list[TimeRange] = []
 
-        morning = _resolve_band_range(
+        morning, morning_color = _resolve_band_range(
             worksheet,
             col,
             color_row=MORNING_COLOR_ROW,
             interval_row=MORNING_INTERVAL_ROW,
             color_default=DEFAULT_MORNING_RANGE,
             accepted_colors={"yellow", "white"},
+            preview_color="yellow",
         )
         if morning:
             ranges.append(morning)
 
-        afternoon = _resolve_band_range(
+        afternoon, afternoon_color = _resolve_band_range(
             worksheet,
             col,
             color_row=AFTERNOON_COLOR_ROW,
             interval_row=AFTERNOON_INTERVAL_ROW,
             color_default=DEFAULT_AFTERNOON_RANGE,
             accepted_colors={"purple", "white"},
+            preview_color="purple",
         )
         if afternoon:
             ranges.append(afternoon)
 
-        flexible = _resolve_band_range(
+        flexible, _flex_color = _resolve_band_range(
             worksheet,
             col,
             color_row=FLEXIBLE_COLOR_ROW,
             interval_row=FLEXIBLE_INTERVAL_ROW,
             color_default=DEFAULT_FULL_DAY_RANGE,
             accepted_colors={"white"},
+            preview_color="yellow",
         )
         if flexible:
             ranges.append(flexible)
+            if morning_color == "none":
+                morning_color = "yellow"
+            if afternoon_color == "none":
+                afternoon_color = "purple"
 
-        custom = _resolve_band_range(
+        custom, custom_color = _resolve_band_range(
             worksheet,
             col,
             color_row=CUSTOM_INTERVAL_COLOR_ROW,
@@ -219,11 +232,28 @@ def _extract_day_dispositions(
             color_default=None,
             accepted_colors={"yellow", "purple", "white"},
             require_custom_or_color=True,
+            preview_color="yellow",
         )
         if custom:
             ranges.append(custom)
+            if custom_color == "yellow" and morning_color == "none":
+                morning_color = "yellow"
+            if custom_color == "purple" and afternoon_color == "none":
+                afternoon_color = "purple"
+            if custom_color == "white":
+                if morning_color == "none":
+                    morning_color = "yellow"
+                if afternoon_color == "none":
+                    afternoon_color = "purple"
 
-        result.append(DayDisposition(date=date, ranges=merge_time_ranges(ranges)))
+        result.append(
+            DayDisposition(
+                date=date,
+                ranges=merge_time_ranges(ranges),
+                morning_color=morning_color,
+                afternoon_color=afternoon_color,
+            )
+        )
 
     return result
 
@@ -237,28 +267,33 @@ def _resolve_band_range(
     color_default: TimeRange | None,
     accepted_colors: set[FillKind],
     require_custom_or_color: bool = False,
-) -> TimeRange | None:
+    preview_color: FillKind = "none",
+) -> tuple[TimeRange | None, FillKind]:
     left = worksheet.cell(color_row, col)
     right = worksheet.cell(color_row, col + 1)
     fill_kind = classify_pair_fill(left, right)
 
     custom = _parse_interval_from_pair(worksheet, color_row, interval_row, col)
     if custom:
-        return custom
+        display_color = fill_kind if fill_kind in {"yellow", "purple", "white"} else preview_color
+        if display_color == "white":
+            display_color = preview_color
+        return custom, display_color
 
     if fill_kind == "none":
-        return None
+        return None, "none"
 
     if fill_kind not in accepted_colors:
-        return None
+        return None, "none"
 
     if fill_kind == "white":
-        return DEFAULT_FULL_DAY_RANGE
+        return DEFAULT_FULL_DAY_RANGE, preview_color
 
     if color_default is None:
-        return None if require_custom_or_color else None
+        return None if require_custom_or_color else None, "none"
 
-    return color_default
+    display_color = fill_kind if fill_kind in {"yellow", "purple"} else preview_color
+    return color_default, display_color
 
 
 def _parse_interval_from_pair(

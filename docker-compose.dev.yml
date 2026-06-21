@@ -28,6 +28,8 @@ services:
       NODE_ENV: development
       CORS_ORIGIN: http://localhost:5173
       SCHEDULER_ENGINE_URL: http://scheduler-engine:8000
+      SCHEDULE_MOCK_WORKER_DRAFTS: ${SCHEDULE_MOCK_WORKER_DRAFTS:-false}
+      SCHEDULE_GENERATE_MOCK: ${SCHEDULE_GENERATE_MOCK:-false}
     ports:
       - '3000:3000'
     depends_on:

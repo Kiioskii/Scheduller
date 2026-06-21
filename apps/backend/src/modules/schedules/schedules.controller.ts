@@ -72,6 +72,21 @@ export class SchedulesController {
     return this.schedulesService.generateSchedule(body);
   }
 
+  @Post('export/pdf')
+  @ApiOperation({ summary: 'Eksport podglądu grafiku do PDF' })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        fileName: { type: 'string' },
+        contentBase64: { type: 'string' },
+      },
+    },
+  })
+  exportPdf(@Body() body: unknown) {
+    return this.schedulesService.exportGrafikPdf(body);
+  }
+
   @Get('template')
   @ApiOperation({ summary: 'Pobranie szablonu podkładu grafiku' })
   @ApiQuery({ name: 'year', type: Number, example: 2026 })
