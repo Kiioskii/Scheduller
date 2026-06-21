@@ -18,6 +18,7 @@ import type { GenerateScheduleEngineRequest } from '../../scheduler-engine/sched
 import { FilesService, type UploadFilePayload } from '../files/files.service';
 import { HolidaysService } from '../holidays/holidays.service';
 import { ShiftsService } from '../shifts/shifts.service';
+import { WorkersService } from '../workers/workers.service';
 
 @Injectable()
 export class SchedulesService {
@@ -27,6 +28,7 @@ export class SchedulesService {
     private readonly holidaysService: HolidaysService,
     private readonly receivedSchedulesService: ReceivedSchedulesService,
     private readonly shiftsService: ShiftsService,
+    private readonly workersService: WorkersService,
   ) {}
 
   async getDraftSubmissionSummary(year: number, month: number): Promise<DraftSubmissionSummary> {
@@ -45,15 +47,13 @@ export class SchedulesService {
     }
 
     const { year, month, dayAssignments } = parsed.data;
-
-    console.log('dayAssignments: ', dayAssignments);
-
     const normalized = this.normalizeYearMonth(year, month);
 
-    const [workerDrafts, holidays, shiftTemplates] = await Promise.all([
+    const [workerDrafts, holidays, shiftTemplates, workers] = await Promise.all([
       this.receivedSchedulesService.downloadAllMonthDraftFiles(normalized.year, normalized.month),
       this.getHolidaysForMonth(normalized.year, normalized.month),
       this.getShiftTemplatesForAssignments(dayAssignments),
+      this.workersService.getWorkers(),
     ]);
 
     const enginePayload: GenerateScheduleEngineRequest = {
@@ -62,6 +62,7 @@ export class SchedulesService {
       dayAssignments,
       holidays,
       shiftTemplates,
+      workers: workers.filter((worker) => !worker.deleted),
       workerDrafts: workerDrafts.map((draft) => ({
         draftId: draft.draftId,
         workerId: draft.workerId,
