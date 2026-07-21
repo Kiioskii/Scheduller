@@ -102,7 +102,8 @@ export function SchedulePreviewDialog({
           <div>
             <h2 className="text-lg font-semibold">Podgląd grafiku</h2>
             <p className="text-sm text-muted-foreground">
-              Sprawdź przypisane zmiany i dostępności z podkładów przed akceptacją lub pobraniem PDF.
+              Sprawdź przypisane zmiany i dostępności z podkładów przed akceptacją lub pobraniem
+              PDF.
             </p>
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={onClose}>
@@ -132,9 +133,8 @@ export function SchedulePreviewDialog({
             <p className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
               Nie udało się obsadzić wszystkich slotów ({result.unassignedSlotIds.length} z{' '}
               {result.totalSlotCount} bez przypisania). Solver dostał tylko {result.draftCount}{' '}
-              podkład(ów) — upewnij się, że pozostali pracownicy przesłali podkłady z
-              dostępnością, albo zmniejsz liczbę przypisanych dni / wymaganych osób w szablonie
-              zmian.
+              podkład(ów) — upewnij się, że pozostali pracownicy przesłali podkłady z dostępnością,
+              albo zmniejsz liczbę przypisanych dni / wymaganych osób w szablonie zmian.
             </p>
           )}
 
@@ -149,7 +149,11 @@ export function SchedulePreviewDialog({
             {readOnly ? 'Zamknij' : 'Odrzuć'}
           </Button>
           <Button type="button" variant="secondary" disabled={isExporting} onClick={handleDownload}>
-            {isExporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+            {isExporting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
             Pobierz PDF
           </Button>
           {!readOnly && (

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
+import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal
 
 from ortools.sat.python import cp_model
@@ -20,6 +23,8 @@ WorkerRole = Literal["worker", "boss"]
 BOSS_AS_WORKER_PENALTY = 1_000
 FULL_DAY_NON_STANDARD_PENALTY = 100
 
+_SOLVER_TMP_DIR = Path(__file__).resolve().parents[3] / "tmp"
+
 
 @dataclass(slots=True)
 class ShiftSlot:
@@ -30,6 +35,17 @@ class ShiftSlot:
     role: WorkerRole
     start: str
     end: str
+
+    def to_json(self) -> dict[str, object]:
+        return {
+            "slotId": self.slot_id,
+            "date": self.date,
+            "shiftTemplateId": self.shift_template_id,
+            "shiftIndex": self.shift_index,
+            "role": self.role,
+            "start": self.start,
+            "end": self.end,
+        }
 
 
 @dataclass(slots=True)
@@ -68,7 +84,65 @@ class SolverResult:
         }
 
 
+def _build_solver_request_payload(
+    workers: list[ParsedWorkerDraft],
+    slots: list[ShiftSlot],
+    *,
+    mock_worker_drafts: bool = False,
+) -> dict[str, object]:
+    return {
+        "mockWorkerDrafts": mock_worker_drafts,
+        "workers": [worker.to_json() for worker in workers],
+        "slots": [slot.to_json() for slot in slots],
+    }
+
+
+def _persist_solver_debug_files(
+    timestamp: int,
+    workers: list[ParsedWorkerDraft],
+    slots: list[ShiftSlot],
+    result: SolverResult,
+    *,
+    mock_worker_drafts: bool = False,
+) -> None:
+    _SOLVER_TMP_DIR.mkdir(parents=True, exist_ok=True)
+    request_path = _SOLVER_TMP_DIR / f"request_{timestamp}.json"
+    response_path = _SOLVER_TMP_DIR / f"response_{timestamp}.json"
+
+    request_path.write_text(
+        json.dumps(
+            _build_solver_request_payload(workers, slots, mock_worker_drafts=mock_worker_drafts),
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    response_path.write_text(
+        json.dumps(result.to_json(), indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+
+
 def solve_schedule(
+    workers: list[ParsedWorkerDraft],
+    slots: list[ShiftSlot],
+    *,
+    mock_worker_drafts: bool = False,
+) -> SolverResult:
+    timestamp = int(time.time())
+    result = _run_schedule_solver(workers, slots)
+    _persist_solver_debug_files(
+        timestamp,
+        workers,
+        slots,
+        result,
+        mock_worker_drafts=mock_worker_drafts,
+    )
+    return result
+
+
+def _run_schedule_solver(
     workers: list[ParsedWorkerDraft],
     slots: list[ShiftSlot],
 ) -> SolverResult:
@@ -76,6 +150,7 @@ def solve_schedule(
         return SolverResult(status="optimal", assignments=[], unassigned_slot_ids=[])
 
     if not workers:
+        print("HERE JEST PROBLEM - workers")
         return SolverResult(
             status="infeasible",
             assignments=[],
@@ -93,13 +168,6 @@ def solve_schedule(
         busy_workers=set(),
         bosses_only=True,
     )
-    if boss_result.unassigned_slot_ids:
-        worker_unassigned = [slot.slot_id for slot in worker_slots]
-        return SolverResult(
-            status="infeasible",
-            assignments=boss_result.assignments,
-            unassigned_slot_ids=boss_result.unassigned_slot_ids + worker_unassigned,
-        )
 
     busy_workers = {(assignment.worker_id, assignment.date) for assignment in boss_result.assignments}
     worker_result = _solve_slot_group(
@@ -113,6 +181,7 @@ def solve_schedule(
     assignments = boss_result.assignments + worker_result.assignments
     unassigned = boss_result.unassigned_slot_ids + worker_result.unassigned_slot_ids
     if unassigned:
+        print("HERE JEST PROBLEM - boss")
         return SolverResult(
             status="infeasible",
             assignments=assignments,
@@ -160,18 +229,28 @@ def _solve_slot_group(
                 assign_var * _assignment_preference_cost(worker, slot, availability)
             )
 
+    impossible_slot_ids: list[str] = []
+    solvable_slots: list[ShiftSlot] = []
+
     for slot in slots:
         eligible = [assign_vars[key] for key in assign_vars if key[1] == slot.slot_id]
+
         if not eligible:
-            return SolverResult(
-                status="infeasible",
-                assignments=[],
-                unassigned_slot_ids=[slot.slot_id for slot in slots],
-            )
+            impossible_slot_ids.append(slot.slot_id)
+            continue
+        solvable_slots.append(slot)
         model.add(sum(eligible) == 1)
 
+    if not solvable_slots:
+        print("HERE JEST PROBLEM")
+        return SolverResult(
+            status="infeasible",
+            assignments=[],
+            unassigned_slot_ids=impossible_slot_ids,
+        )
+
     slots_by_date: dict[str, list[ShiftSlot]] = {}
-    for slot in slots:
+    for slot in solvable_slots:
         slots_by_date.setdefault(slot.date, []).append(slot)
 
     for worker in workers:
@@ -192,10 +271,11 @@ def _solve_slot_group(
     status = solver.solve(model)
 
     if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        print("HERE JEST PROBLEM - model")
         return SolverResult(
             status="infeasible",
             assignments=[],
-            unassigned_slot_ids=[slot.slot_id for slot in slots],
+            unassigned_slot_ids=impossible_slot_ids + [slot.slot_id for slot in solvable_slots],
         )
 
     assignments: list[ScheduleAssignment] = []
@@ -204,7 +284,7 @@ def _solve_slot_group(
     for (worker_id, slot_id), var in assign_vars.items():
         if solver.value(var) != 1:
             continue
-        slot = next(item for item in slots if item.slot_id == slot_id)
+        slot = next(item for item in solvable_slots if item.slot_id == slot_id)
         assignments.append(
             ScheduleAssignment(
                 date=slot.date,
@@ -218,14 +298,24 @@ def _solve_slot_group(
         )
         assigned_slot_ids.add(slot_id)
 
-    unassigned = [slot.slot_id for slot in slots if slot.slot_id not in assigned_slot_ids]
+    unassigned = impossible_slot_ids + [
+        slot.slot_id for slot in solvable_slots if slot.slot_id not in assigned_slot_ids
+    ]
+    if unassigned:
+        print("HERE JEST PROBLEM - assigned")
+        return SolverResult(
+            status="infeasible",
+            assignments=assignments,
+            unassigned_slot_ids=unassigned,
+        )
+
     solver_status: Literal["optimal", "feasible"] = (
         "optimal" if status == cp_model.OPTIMAL else "feasible"
     )
     return SolverResult(
         status=solver_status,
         assignments=assignments,
-        unassigned_slot_ids=unassigned,
+        unassigned_slot_ids=[],
     )
 
 

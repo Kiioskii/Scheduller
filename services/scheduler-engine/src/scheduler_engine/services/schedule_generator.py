@@ -7,7 +7,12 @@ from typing import Literal
 from uuid import uuid4
 
 from scheduler_engine.schemas.schedule_generate import GenerateScheduleRequest, GenerateScheduleResponse
-from scheduler_engine.services.mock_worker_draft import build_mock_parsed_worker
+from scheduler_engine.services.mock_worker_draft import (
+    build_mock_parsed_worker,
+    is_mock_schedule_iso_date,
+    mock_required_workers,
+    select_mock_workers,
+)
 from scheduler_engine.services.podklad_parser import ParsedWorkerDraft, parse_worker_draft
 from scheduler_engine.services.schedule_preview import build_schedule_preview
 from scheduler_engine.services.schedule_solver import ShiftSlot, solve_schedule
@@ -28,12 +33,17 @@ class ScheduleGeneratorService:
         worker_roles = {worker.id: worker.role for worker in payload.workers}
         if payload.mock_worker_drafts:
             parsed_workers = self._build_mock_worker_drafts(payload)
+            preview_workers = parsed_workers
         else:
             parsed_workers = self._parse_worker_drafts(payload, worker_roles)
-        preview_workers = self._workers_for_preview(payload, parsed_workers)
+            preview_workers = self._workers_for_preview(payload, parsed_workers)
         worker_table = [worker.to_json() for worker in parsed_workers]
         slots = self._build_shift_slots(payload)
-        solver_result = solve_schedule(parsed_workers, slots)
+        solver_result = solve_schedule(
+            parsed_workers,
+            slots,
+            mock_worker_drafts=payload.mock_worker_drafts,
+        )
         assignments = solver_result.assignments
         preview = build_schedule_preview(
             year=payload.year,
@@ -113,8 +123,7 @@ class ScheduleGeneratorService:
     ) -> list[ParsedWorkerDraft]:
         workers = [
             build_mock_parsed_worker(worker, year=payload.year, month=payload.month)
-            for worker in payload.workers
-            if not worker.deleted
+            for worker in select_mock_workers(payload.workers)
         ]
         workers.sort(key=lambda item: (item.last_name.casefold(), item.first_name.casefold()))
         return workers
@@ -150,6 +159,13 @@ class ScheduleGeneratorService:
         slots: list[ShiftSlot] = []
 
         for day_assignment in payload.day_assignments:
+            if payload.mock_worker_drafts and not is_mock_schedule_iso_date(
+                day_assignment.date,
+                year=payload.year,
+                month=payload.month,
+            ):
+                continue
+
             template = templates_by_id.get(day_assignment.shift_template_id)
             if template is None:
                 continue
@@ -159,7 +175,11 @@ class ScheduleGeneratorService:
                 if weekday_name not in shift.weekdays:
                     continue
 
-                for position in range(shift.required_workers):
+                required = shift.required_workers
+                if payload.mock_worker_drafts:
+                    required = mock_required_workers(shift.role, required)
+
+                for position in range(required):
                     slots.append(
                         ShiftSlot(
                             slot_id=(

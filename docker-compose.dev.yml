@@ -7,6 +7,7 @@ services:
       target: dev
     volumes:
       - ./services/scheduler-engine/src:/app/src
+      - ./services/scheduler-engine/tmp:/app/tmp
     environment:
       ENVIRONMENT: development
       LOG_LEVEL: DEBUG

@@ -19,7 +19,13 @@ import { z } from 'zod';
 import { apiFetch } from '@/lib/http';
 
 export type ScheduleEntry = z.infer<typeof scheduleEntrySchema>;
-export type { ImportedScheduleFile, DraftSubmissionSummary, ScheduleDayAssignment, SchedulePreview, GenerateScheduleResult };
+export type {
+  ImportedScheduleFile,
+  DraftSubmissionSummary,
+  ScheduleDayAssignment,
+  SchedulePreview,
+  GenerateScheduleResult,
+};
 
 export const scheduleKeys = {
   all: ['schedule'] as const,
@@ -80,6 +86,7 @@ export async function generateSchedule(
     body: JSON.stringify(body),
   });
   const json = await handleResponse(res);
+  console.log('json ', json);
   return generateScheduleResultSchema.parse(json);
 }
 

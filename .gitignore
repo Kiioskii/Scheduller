@@ -45,3 +45,7 @@ venv/
 .uv/
 
 .venv-deps/
+
+# Scheduler engine solver debug dumps
+services/scheduler-engine/tmp/*
+!services/scheduler-engine/tmp/.gitkeep
